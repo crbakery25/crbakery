@@ -14,7 +14,7 @@ window.MENU = {
       description: "Handcrafted 9-inch artisanal rounds, sold as whole cakes.",
       layout: "cards",
       items: [
-        { id: "blueberry-crumble", name: "Blueberry Crumble", price: 60, description: "", image: "images/blueberry-crumble.jpg", alt: "Blueberry cheesecake with crumb topping and a white drizzle", paymentLink: "" },
+        { id: "blueberry-crumble", name: "Blueberry Crumble", price: 50, description: "", image: "images/blueberry-crumble.jpg", alt: "Blueberry cheesecake with crumb topping and a white drizzle", paymentLink: "" },
         { id: "apple-crumble",     name: "Apple Crumble",     price: 60, description: "", image: "images/apple-crumble.jpg", alt: "Cheesecake with a golden crumb topping", paymentLink: "" },
         { id: "fresh-strawberry",  name: "Fresh Strawberry",  price: 50, description: "", image: "images/fresh-strawberry.jpg", alt: "Cheesecake topped with fresh strawberries and glaze", paymentLink: "" },
         { id: "classic-blueberry", name: "Classic Blueberry", price: 40, description: "", image: "images/classic-blueberry.jpg", alt: "Cheesecake topped with glossy blueberries", paymentLink: "" },
