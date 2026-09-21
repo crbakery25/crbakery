@@ -65,8 +65,14 @@
     </div>
   </footer>
 
-  <script src="js/site-config.js"></script>
-  <script src="js/menu-data.js"></script>
-  <script src="js/site.js"></script>
+  <script>
+    /* Script version: bump this number (in all four pages) whenever a js file changes, so visitors pick up the new file on their next visit. */
+    (function () {
+      var v = 1;
+      ["site-config", "menu-data", "site"].forEach(function (n) {
+        document.write('<script src="js/' + n + '.js?v=' + v + '"><\/script>');
+      });
+    })();
+  </script>
 </body>
 </html>
