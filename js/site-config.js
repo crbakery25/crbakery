@@ -14,5 +14,9 @@ window.SITE = {
   closedRanges: [                      // dates CR Bakery is away: no pickups (start and end are both included)
     { start: "2026-09-26", end: "2026-10-03" }
   ],
+  bookedSlots: [                       // times already taken: one order per 15-minute time. Add a line for each confirmed order:
+    // { date: "2026-10-10", time: "10:15" },   (24-hour time between 09:00 and 19:00; those times are hidden for that date)
+  ],
+  bookingApi: "https://crbakery-booking.crbakery25.workers.dev/",                      // address of the booking service (Cloudflare Worker). Leave empty to use only the bookedSlots list above.
   formEndpoint: "https://formspree.io/f/mppwprrj"   // Formspree form: each order is emailed to you
 };

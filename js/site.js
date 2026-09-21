@@ -4,6 +4,7 @@
   "use strict";
 
   var SITE = window.SITE || {};
+  if (SITE.bookingApi) SITE.bookingApi = String(SITE.bookingApi).replace(/\/+$/, "");
   var MENU = window.MENU || { sections: [] };
 
   function $(sel, root) { return (root || document).querySelector(sel); }
@@ -243,6 +244,54 @@
     /* Pickup date: minimum notice and away dates */
     var dateInput = $("[name=date]", form);
     var dateLabel = $("label[for=f-date]", form);
+    var timeLabel = $("label[for=f-time]", form);
+    var timeSelect = $("#f-time", form);
+    /* Times from 9:00 AM to 7:00 PM in 15 minute steps */
+    var timeSlots = [];
+    for (var m = 9 * 60; m <= 19 * 60; m += 15) {
+      var h24 = Math.floor(m / 60), min = m % 60;
+      timeSlots.push({
+        key: String(h24).padStart(2, "0") + ":" + String(min).padStart(2, "0"),
+        label: ((h24 + 11) % 12 + 1) + ":" + String(min).padStart(2, "0") + (h24 < 12 ? " AM" : " PM")
+      });
+    }
+    /* One order per time: times taken (from the booking service, plus any listed in SITE.bookedSlots) are not offered */
+    var takenByDate = {};
+    function takenKeys(iso) {
+      var listed = (SITE.bookedSlots || []).filter(function (b) { return b && b.date === iso; })
+        .map(function (b) { return b.time; });
+      return listed.concat(takenByDate[iso] || []);
+    }
+    function loadTaken(iso) {
+      if (!SITE.bookingApi || !iso) return Promise.resolve();
+      return fetch(SITE.bookingApi + "/slots?date=" + encodeURIComponent(iso), { cache: "no-store" })
+        .then(function (res) { if (!res.ok) throw new Error("bad response"); return res.json(); })
+        .then(function (d) { takenByDate[iso] = d.taken || []; })
+        .catch(function () {});
+    }
+    function refreshTimes() {
+      buildTimes();
+      loadTaken(dateInput ? dateInput.value : "").then(buildTimes);
+    }
+    function buildTimes() {
+      if (!timeSelect) return;
+      var keep = timeSelect.value;
+      var taken = takenKeys(dateInput ? dateInput.value : "");
+      timeSelect.innerHTML = '<option value="">Choose a time</option>';
+      timeSlots.forEach(function (slot) {
+        var isTaken = taken.indexOf(slot.key) !== -1;
+        var opt = document.createElement("option");
+        opt.value = slot.label;
+        opt.setAttribute("data-key", slot.key);
+        opt.textContent = isTaken ? slot.label + " (taken)" : slot.label;
+        opt.disabled = isTaken;
+        if (slot.label === keep && !isTaken) opt.selected = true;
+        timeSelect.appendChild(opt);
+      });
+    }
+    buildTimes();
+    var addressBox = $("#address-fields", form);
+    var addressInputs = $all("input", addressBox);
     var dateHint = $("#date-hint");
     var lead = Number(SITE.leadTimeHours) || 0;
     var minStr = firstOpenDay(isoOf(new Date(Date.now() + lead * 3600 * 1000)));
@@ -263,17 +312,24 @@
     if (dateInput) {
       dateInput.addEventListener("input", checkDate);
       dateInput.addEventListener("change", checkDate);
+      dateInput.addEventListener("input", refreshTimes);
+      dateInput.addEventListener("change", refreshTimes);
     }
 
     /* Pickup or delivery */
     var fulfillHint = $("#fulfillment-hint");
     function applyFulfillment() {
+      buildTimes();
       var mode = fulfillment();
       var word = mode === "delivery" ? "delivery" : "pickup";
       $all(".choice", form).forEach(function (c) {
         c.classList.toggle("is-selected", $("input", c).checked);
       });
-      if (dateLabel) dateLabel.textContent = word.charAt(0).toUpperCase() + word.slice(1) + " date";
+      var cap = word.charAt(0).toUpperCase() + word.slice(1);
+      if (dateLabel) dateLabel.textContent = cap + " date";
+      if (timeLabel) timeLabel.textContent = cap + " time";
+      addressBox.hidden = mode !== "delivery";
+      addressInputs.forEach(function (i) { i.required = mode === "delivery"; });
       if (dateHint) {
         var soon = closedRanges().filter(function (r) { return r.end >= isoOf(new Date()); })[0];
         dateHint.textContent = "Orders need at least " + lead + " hours of notice. Earliest " + word + " date: " + minLabel + "." +
@@ -315,6 +371,26 @@
       f.submit();
     }
 
+    /* Booking service: hold a time, then confirm it once the order is sent */
+    function reserveSlot(date, key, name) {
+      return fetch(SITE.bookingApi + "/reserve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: date, time: key, name: name })
+      }).then(function (res) {
+        return res.json().then(function (body) { return { status: res.status, body: body }; });
+      });
+    }
+    function finishSlot(booking) {
+      if (!booking || !SITE.bookingApi) return;
+      fetch(SITE.bookingApi + "/finalize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: booking.token }),
+        keepalive: true
+      }).catch(function () {});
+    }
+
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       var ls = lines();
@@ -327,12 +403,15 @@
       var mode = fulfillment();
       var word = mode === "delivery" ? "Delivery" : "Pickup";
       var data = {
-        name: fd.get("name"), email: fd.get("email"), phone: fd.get("phone"),
-        address: fd.get("address"), date: fd.get("date"), notes: fd.get("notes") || ""
+        name: (fd.get("first_name") + " " + fd.get("last_name")).trim(), email: fd.get("email") || "", phone: fd.get("phone"),
+        address: mode === "delivery"
+          ? [fd.get("street"), fd.get("city"), String(fd.get("state")).toUpperCase() + " " + fd.get("zip")].join(", ")
+          : "",
+        date: fd.get("date"), time: fd.get("time"), notes: fd.get("notes") || ""
       };
       var s = summary(ls);
 
-      if (SITE.formEndpoint) {
+      function sendOrder(booking) {
         var payload = {
           _subject: "New CR Bakery " + word.toLowerCase() + " order from " + data.name,
           name: data.name, email: data.email, phone: data.phone,
@@ -340,6 +419,8 @@
           order: s.text, estimated_total: s.total, notes: data.notes
         };
         payload[word.toLowerCase() + "_date"] = data.date;
+        payload[word.toLowerCase() + "_time"] = data.time;
+        if (booking) payload.release_link = booking.releaseUrl;
         say("Sending your order...", "");
         fetch(SITE.formEndpoint, {
           method: "POST",
@@ -347,17 +428,41 @@
           body: JSON.stringify(payload)
         }).then(function (res) {
           if (!res.ok) throw new Error("bad response");
+          finishSlot(booking);
           form.reset();
           $all("[data-qty]", host).forEach(function (i) { i.value = 0; });
           applyFulfillment();
           say("Thanks, " + data.name + ". Your order was sent and CR Bakery will follow up by email.", "ok");
         }).catch(function () {
           // If the in-page send is blocked, send it as a regular form post instead.
+          finishSlot(booking);
           postPlain(SITE.formEndpoint, payload);
         });
+      }
+
+      if (SITE.formEndpoint && SITE.bookingApi) {
+        /* Hold the chosen time first so two customers can't take the same one */
+        var chosen = timeSelect.options[timeSelect.selectedIndex];
+        say("Checking your time...", "");
+        reserveSlot(data.date, chosen ? chosen.getAttribute("data-key") : "", data.name).then(function (r) {
+          if (r.status === 200 && r.body && r.body.token) {
+            sendOrder(r.body);
+          } else if (r.status === 409) {
+            say("Sorry, that time was just taken. Please choose another time.", "error");
+            refreshTimes();
+          } else if (r.status === 429) {
+            say("Too many attempts. Please try again in a little while.", "error");
+          } else {
+            say("We couldn't check that time. Please try again.", "error");
+          }
+        }).catch(function () {
+          say("We couldn't check that time. Please check your connection and try again.", "error");
+        });
+      } else if (SITE.formEndpoint) {
+        sendOrder(null);
       } else if (SITE.email) {
         var body = "Name: " + data.name + "\nEmail: " + data.email + "\nPhone: " + data.phone +
-          "\nAddress: " + data.address + "\n" + word + " date: " + data.date + "\n\nOrder:\n" + s.text +
+          (data.address ? "\nAddress: " + data.address : "") + "\n" + word + " date: " + data.date + "\n" + word + " time: " + data.time + "\n\nOrder:\n" + s.text +
           "\n\nEstimated total: " + s.total + "\n\nNotes: " + data.notes;
         window.location.href = "mailto:" + (SITE.email || "") +
           "?subject=" + encodeURIComponent("New " + word.toLowerCase() + " order from " + data.name) + "&body=" + encodeURIComponent(body);

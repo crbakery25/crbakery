@@ -55,12 +55,12 @@
             <legend>Your details</legend>
             <div class="field-row">
               <div class="field">
-                <label for="f-name">Name</label>
-                <input id="f-name" name="name" type="text" autocomplete="name" required>
+                <label for="f-first">First name</label>
+                <input id="f-first" name="first_name" type="text" autocomplete="given-name" required>
               </div>
               <div class="field">
-                <label for="f-email">Email</label>
-                <input id="f-email" name="email" type="email" autocomplete="email" required>
+                <label for="f-last">Last name</label>
+                <input id="f-last" name="last_name" type="text" autocomplete="family-name" required>
               </div>
             </div>
             <div class="field-row">
@@ -69,14 +69,43 @@
                 <input id="f-phone" name="phone" type="tel" autocomplete="tel" required>
               </div>
               <div class="field">
+                <label for="f-email">Email</label>
+                <input id="f-email" name="email" type="email" autocomplete="email" required>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
                 <label for="f-date">Pickup date</label>
                 <input id="f-date" name="date" type="date" required aria-describedby="date-hint">
                 <p class="field-hint" id="date-hint">Orders need at least 48 hours of notice.</p>
               </div>
+              <div class="field">
+                <label for="f-time">Pickup time</label>
+                <select id="f-time" name="time" required>
+                  <option value="">Choose a time</option>
+                </select>
+                <p class="field-hint">Between 9:00 AM and 7:00 PM.</p>
+              </div>
             </div>
-            <div class="field">
-              <label for="f-address">Address</label>
-              <input id="f-address" name="address" type="text" autocomplete="street-address" placeholder="Street, city, ZIP" required>
+            <div id="address-fields" hidden>
+              <div class="field">
+                <label for="f-street">Street address</label>
+                <input id="f-street" name="street" type="text" autocomplete="address-line1" placeholder="123 Main St" pattern=".*[A-Za-z].*" title="Enter the house number and street name, like 123 Main St">
+              </div>
+              <div class="field">
+                <label for="f-city">City</label>
+                <input id="f-city" name="city" type="text" autocomplete="address-level2">
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="f-state">State</label>
+                  <input id="f-state" name="state" type="text" autocomplete="address-level1" maxlength="2" pattern="[A-Za-z]{2}" title="Two-letter state, like CA" placeholder="CA">
+                </div>
+                <div class="field">
+                  <label for="f-zip">ZIP code</label>
+                  <input id="f-zip" name="zip" type="text" autocomplete="postal-code" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" title="Five-digit ZIP code">
+                </div>
+              </div>
             </div>
             <div class="field">
               <label for="f-notes">Notes (optional)</label>
@@ -133,7 +162,7 @@
   <script>
     /* Script version: bump this number (in all four pages) whenever a js file changes, so visitors pick up the new file on their next visit. */
     (function () {
-      var v = 1;
+      var v = 2;
       ["site-config", "menu-data", "site"].forEach(function (n) {
         document.write('<script src="js/' + n + '.js?v=' + v + '"><\/script>');
       });
