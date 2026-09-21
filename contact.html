@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Order and contact | CR Bakery</title>
+  <meta name="description" content="Order a cheesecake from CR Bakery, pay with Venmo, or get in touch.">
+  <meta name="theme-color" content="#141b40">
+  <link rel="icon" href="images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html" aria-label="CR Bakery home"><img src="images/logo.png" alt="CR Bakery, freshly baked happiness" width="64" height="64"></a>
+      <nav class="nav" aria-label="Main">
+        <a href="menu.html">Menu</a>
+        <a href="about.html">About</a>
+        <a class="btn btn-solid btn-sm" href="contact.html" aria-current="page">Order</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap">
+      <div class="page-head">
+        <h1>Order and contact</h1>
+        <p>Choose your cakes, tell us the date you need them, and CR Bakery will confirm your order.</p>
+      </div>
+
+      <div class="order-layout">
+        <form class="order-form" id="order">
+          <fieldset>
+            <legend>Your cakes</legend>
+            <div id="order-items"></div>
+            <div class="order-total"><span>Estimated total</span><span id="order-total">$0</span></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Your details</legend>
+            <div class="field-row">
+              <div class="field">
+                <label for="f-name">Name</label>
+                <input id="f-name" name="name" type="text" autocomplete="name" required>
+              </div>
+              <div class="field">
+                <label for="f-email">Email</label>
+                <input id="f-email" name="email" type="email" autocomplete="email" required>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="f-phone">Phone (optional)</label>
+                <input id="f-phone" name="phone" type="tel" autocomplete="tel">
+              </div>
+              <div class="field">
+                <label for="f-date">Date needed</label>
+                <input id="f-date" name="date" type="date" required>
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-notes">Notes (optional)</label>
+              <textarea id="f-notes" name="notes" rows="4"></textarea>
+            </div>
+          </fieldset>
+
+          <button class="btn btn-solid" type="submit">Send order</button>
+          <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+        </form>
+
+        <aside class="pay" aria-labelledby="pay-title">
+          <h2 id="pay-title">Pay with Venmo</h2>
+          <p>Add your name to the payment note.</p>
+          <a class="btn btn-line" data-venmo-link href="#" target="_blank" rel="noopener">Open Venmo</a>
+          <hr>
+          <h2>Questions?</h2>
+          <p data-email-item>Email <a data-email-link href="#"></a>.</p>
+          <p>Message CR Bakery on <a data-facebook-link href="#" target="_blank" rel="noopener">Facebook</a>, or find every link on <a data-linktree-link href="#" target="_blank" rel="noopener">Linktree</a>.</p>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>
+          <p class="wordmark">CR Bakery</p>
+          <p class="footer-tag">Freshly baked happiness</p>
+        </div>
+        <div>
+          <h2 class="footer-title">Explore</h2>
+          <ul class="footer-links">
+            <li><a href="menu.html">Menu</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="contact.html">Order</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="footer-title">Pay and contact</h2>
+          <ul class="footer-links">
+            <li><a data-venmo-link href="#" target="_blank" rel="noopener">Venmo</a></li>
+            <li><a data-facebook-link href="#" target="_blank" rel="noopener">Facebook</a></li>
+            <li><a data-linktree-link href="#" target="_blank" rel="noopener">Linktree</a></li>
+            <li data-email-item><a data-email-link href="#"></a></li>
+          </ul>
+        </div>
+      </div>
+      <p class="legal">&copy; <span data-year>2026</span> CR Bakery. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/site-config.js"></script>
+  <script src="js/menu-data.js"></script>
+  <script src="js/site.js"></script>
+</body>
+</html>
