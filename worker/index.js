@@ -5,7 +5,7 @@
      ADMIN_KEY        secret used to open the /admin page
    The site calls /slots, /reserve and /finalize. The order email carries a /release link. */
 
-const HOLD_MINUTES = 30;   // a time held while an order is being sent frees itself after this long
+const HOLD_MINUTES = 5; // a time held while an order is being sent frees itself after this long
 const MAX_PER_HOUR = 5;    // most times one visitor (IP address) can hold or book in an hour
 const OPEN_MIN = 9 * 60;   // 9:00 AM
 const CLOSE_MIN = 19 * 60; // 7:00 PM
@@ -126,8 +126,11 @@ async function admin(request, env, url) {
 
 /* ---------- Helpers ---------- */
 
+/* Removes holds that ran out and bookings for dates that have passed */
 async function cleanup(env) {
-  await env.DB.prepare("DELETE FROM bookings WHERE status = 'hold' AND expires_at < ?").bind(Date.now()).run();
+  const now = Date.now();
+  const cutoff = new Date(now - 24 * 3600 * 1000).toISOString().slice(0, 10);
+  await env.DB.prepare("DELETE FROM bookings WHERE (status = 'hold' AND expires_at < ?) OR date < ?").bind(now, cutoff).run();
 }
 
 async function readJson(request) {
