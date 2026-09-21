@@ -6,5 +6,5 @@ window.SITE = {
   venmoUrl: "https://venmo.com/code?user_id=3268553142697984963&created=1789952430",
   facebookUrl: "https://www.facebook.com/profile.php?id=61571157834804",
   linktreeUrl: "https://linktr.ee/crbakery25",
-  formEndpoint: ""                     // paste your Formspree (or similar) form URL here to receive orders by email
+  formEndpoint: "https://formspree.io/f/mppwprrj"   // Formspree form: each order is emailed to you
 };
