@@ -6,6 +6,7 @@ A plain HTML/CSS/JS site. No build step. It runs on GitHub Pages.
 
 - `js/menu-data.js`: the menu (names, prices, photos). Edit this to add or change items.
 - `js/site-config.js`: email, Venmo, Facebook, and Linktree links, and the order-form service URL.
+- `js/site-config.js` also holds `deliveryZips`: the driving miles (one way) to each ZIP code you deliver to. The order form uses it to show an estimated delivery fee.
 - `images/`: logo and photos. Put a cake photo here and set its `image` in `menu-data.js`.
 - `index.html`, `menu.html`, `about.html`, `contact.html`: the pages.
 - `css/styles.css`: colors and layout (navy and gold from the logo).

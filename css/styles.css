@@ -85,6 +85,19 @@ a { color: var(--navy); }
 .nav a:not(.btn):hover,
 .nav a[aria-current="page"] { border-bottom-color: var(--gold); }
 
+/* Pickup or delivery choice */
+.choices { display: flex; gap: .75rem; margin-bottom: .75rem; }
+.choice {
+  flex: 1; display: flex; align-items: center; gap: .6rem; padding: .85rem 1rem;
+  border: 1px solid #b9bfd3; border-radius: var(--r); cursor: pointer; font-weight: 500; background: #fff;
+}
+.choice input { accent-color: var(--navy); width: 1.05rem; height: 1.05rem; margin: 0; }
+.choice.is-selected { border-color: var(--navy); background: var(--mist); box-shadow: inset 0 0 0 1px var(--navy); }
+.total-note { margin: .35rem .75rem 0; font-size: .9rem; color: var(--muted); }
+
+/* Closure notice */
+.notice { background: #f3ead6; color: var(--navy-deep); border-bottom: 1px solid #e1d3ae; padding: .6rem 0; font-size: .95rem; text-align: center; }
+
 /* Buttons */
 .btn {
   display: inline-block; font: 600 .98rem/1 var(--sans); text-align: center;
@@ -231,9 +244,10 @@ a { color: var(--navy); }
   display: flex; justify-content: space-between; padding: 1rem .75rem; margin-top: .5rem;
   border-top: 2px solid var(--navy); font-weight: 600; color: var(--navy);
 }
-.field { display: grid; gap: .4rem; margin-bottom: 1.1rem; }
+.field { display: grid; align-content: start; gap: .4rem; margin-bottom: 1.1rem; }
 .field label { font-weight: 500; font-size: .95rem; }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.field-hint { margin: 0; font-size: .875rem; color: var(--muted); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 1rem; }
 .field input, .field textarea {
   width: 100%; padding: .8rem .9rem; border: 1px solid #b9bfd3; border-radius: var(--r);
   font: inherit; color: var(--ink); background: #fff;

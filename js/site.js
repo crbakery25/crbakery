@@ -14,6 +14,17 @@
     return "$" + (v % 1 === 0 ? String(v) : v.toFixed(2));
   }
 
+  function moneyFull(n) { return "$" + (Math.round(n * 100) / 100).toFixed(2); }
+
+  function delivery() {
+    var d = SITE.delivery || {};
+    return { baseFee: Number(d.baseFee) || 0, baseMiles: Number(d.baseMiles) || 0, perMile: Number(d.perMileFee) || 0 };
+  }
+  /* Delivery is a flat fee for now; CR Bakery charges more by hand if needed. */
+  function deliveryText() {
+    return moneyFull(delivery().baseFee) + " added to your order (farther addresses may cost more)";
+  }
+
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -98,6 +109,42 @@
     });
   }
 
+  /* Closed dates (vacations) */
+  function isoOf(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function fromISO(str) { var p = str.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function shortDate(d, weekday) {
+    return d.toLocaleDateString(undefined, weekday ? { weekday: "short", month: "short", day: "numeric" } : { month: "short", day: "numeric" });
+  }
+  function closedRanges() { return (SITE.closedRanges || []).filter(function (r) { return r && r.start && r.end; }); }
+  function closedRangeFor(iso) {
+    var rs = closedRanges();
+    for (var i = 0; i < rs.length; i++) { if (iso >= rs[i].start && iso <= rs[i].end) return rs[i]; }
+    return null;
+  }
+  function rangeLabel(r) { return shortDate(fromISO(r.start)) + " to " + shortDate(fromISO(r.end)); }
+  function firstOpenDay(iso) {
+    var r = closedRangeFor(iso);
+    while (r) {
+      var d = fromISO(r.end); d.setDate(d.getDate() + 1);
+      iso = isoOf(d); r = closedRangeFor(iso);
+    }
+    return iso;
+  }
+
+  /* Notice bar while a closure is upcoming or under way */
+  function showClosureNotice() {
+    var today = isoOf(new Date());
+    var upcoming = closedRanges().filter(function (r) { return r.end >= today; })
+      .sort(function (a, b) { return a.start < b.start ? -1 : 1; })[0];
+    $all("[data-closure-notice]").forEach(function (el) {
+      if (!upcoming) return;
+      el.querySelector(".wrap").textContent = "CR Bakery is away " + rangeLabel(upcoming) + ". Pickups and deliveries aren't available on those dates.";
+      el.hidden = false;
+    });
+  }
+
   /* Contact, payment, and social links */
   function fillContactLinks() {
     $all("[data-venmo-link]").forEach(function (a) { a.href = SITE.venmoUrl || "#"; });
@@ -109,6 +156,8 @@
       $all("[data-email-item]").forEach(function (el) { el.parentNode.removeChild(el); });
     }
     $all("[data-year]").forEach(function (el) { el.textContent = new Date().getFullYear(); });
+    $all("[data-delivery-text]").forEach(function (el) { el.textContent = deliveryText(); });
+    $all("[data-lead-time]").forEach(function (el) { if (SITE.leadTimeHours) el.textContent = SITE.leadTimeHours + " hours"; });
   }
 
   /* Order form */
@@ -120,8 +169,10 @@
 
     var host = $("#order-items");
     var totalEl = $("#order-total");
+    var noteEl = $("#total-note");
     var statusEl = $("#form-status");
     var byId = {};
+    var dv = delivery();
 
     host.innerHTML = MENU.sections.map(function (s) {
       return '<div class="order-group"><h3>' + esc(s.title) + "</h3>" + s.items.map(function (it) {
@@ -136,6 +187,11 @@
       }).join("") + "</div>";
     }).join("");
 
+    function fulfillment() {
+      var r = $('input[name="fulfillment"]:checked', form);
+      return r ? r.value : "pickup";
+    }
+
     function rowQty(row) {
       var n = parseInt($("[data-qty]", row).value, 10);
       return isNaN(n) || n < 0 ? 0 : Math.min(n, 20);
@@ -147,14 +203,24 @@
       }).filter(function (l) { return l.qty > 0; });
     }
 
+    function subtotal() {
+      return lines().reduce(function (sum, l) { return sum + l.qty * l.item.price; }, 0);
+    }
+
     function refresh() {
-      var total = 0;
       $all(".order-row", host).forEach(function (row) {
-        var q = rowQty(row);
-        row.classList.toggle("is-selected", q > 0);
-        total += q * byId[row.getAttribute("data-id")].price;
+        row.classList.toggle("is-selected", rowQty(row) > 0);
       });
+      var sub = subtotal();
+      var isDelivery = fulfillment() === "delivery";
+      var total = sub + (isDelivery && sub > 0 ? dv.baseFee : 0);
       totalEl.textContent = money(total);
+      if (isDelivery && sub > 0) {
+        noteEl.textContent = "Includes a " + moneyFull(dv.baseFee) + " delivery fee. If your address needs a higher fee, CR Bakery will let you know before confirming your total.";
+        noteEl.hidden = false;
+      } else {
+        noteEl.hidden = true;
+      }
     }
 
     function setQty(id, qty) {
@@ -174,21 +240,68 @@
     });
     host.addEventListener("input", refresh);
 
+    /* Pickup date: minimum notice and away dates */
     var dateInput = $("[name=date]", form);
-    if (dateInput) {
-      var t = new Date();
-      dateInput.min = t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0");
+    var dateLabel = $("label[for=f-date]", form);
+    var dateHint = $("#date-hint");
+    var lead = Number(SITE.leadTimeHours) || 0;
+    var minStr = firstOpenDay(isoOf(new Date(Date.now() + lead * 3600 * 1000)));
+    var minLabel = shortDate(fromISO(minStr), true);
+    if (dateInput) dateInput.min = minStr;
+
+    function checkDate() {
+      if (!dateInput) return;
+      var v = dateInput.value, msg = "";
+      if (v && v < minStr) {
+        msg = "Please choose " + minLabel + " or later. Orders need at least " + lead + " hours of notice.";
+      } else if (v && closedRangeFor(v)) {
+        var r = closedRangeFor(v);
+        msg = "CR Bakery is away " + rangeLabel(r) + ". Please choose " + shortDate(fromISO(firstOpenDay(v)), true) + " or later.";
+      }
+      dateInput.setCustomValidity(msg);
     }
+    if (dateInput) {
+      dateInput.addEventListener("input", checkDate);
+      dateInput.addEventListener("change", checkDate);
+    }
+
+    /* Pickup or delivery */
+    var fulfillHint = $("#fulfillment-hint");
+    function applyFulfillment() {
+      var mode = fulfillment();
+      var word = mode === "delivery" ? "delivery" : "pickup";
+      $all(".choice", form).forEach(function (c) {
+        c.classList.toggle("is-selected", $("input", c).checked);
+      });
+      if (dateLabel) dateLabel.textContent = word.charAt(0).toUpperCase() + word.slice(1) + " date";
+      if (dateHint) {
+        var soon = closedRanges().filter(function (r) { return r.end >= isoOf(new Date()); })[0];
+        dateHint.textContent = "Orders need at least " + lead + " hours of notice. Earliest " + word + " date: " + minLabel + "." +
+          (soon ? " CR Bakery is away " + rangeLabel(soon) + "." : "");
+      }
+      if (fulfillHint) {
+        fulfillHint.textContent = mode === "delivery"
+          ? "Delivery adds " + moneyFull(dv.baseFee) + " to your total. If your address needs a higher fee, CR Bakery will let you know."
+          : "Delivery is also available: " + deliveryText() + ".";
+      }
+      refresh();
+    }
+    $all('input[name="fulfillment"]', form).forEach(function (r) { r.addEventListener("change", applyFulfillment); });
 
     function say(msg, kind) {
       statusEl.textContent = msg;
       statusEl.className = "form-status" + (kind ? " is-" + kind : "");
     }
 
-    function summary(data, ls) {
-      var total = ls.reduce(function (s, l) { return s + l.qty * l.item.price; }, 0);
+    function summary(ls) {
+      var sub = ls.reduce(function (sum, l) { return sum + l.qty * l.item.price; }, 0);
       var text = ls.map(function (l) { return l.qty + " x " + l.item.name + " (" + money(l.item.price) + " each)"; }).join("\n");
-      return { text: text, total: money(total) };
+      var total = sub, fee = 0;
+      if (fulfillment() === "delivery") {
+        fee = dv.baseFee; total += fee;
+        text += "\nDelivery: " + moneyFull(fee) + " (final fee to be confirmed if the address is farther)";
+      }
+      return { text: text, total: money(total), fee: fee };
     }
 
     function postPlain(url, fields) {
@@ -211,15 +324,22 @@
         return;
       }
       var fd = new FormData(form);
-      var data = { name: fd.get("name"), email: fd.get("email"), phone: fd.get("phone") || "", date: fd.get("date"), notes: fd.get("notes") || "" };
-      var s = summary(data, ls);
+      var mode = fulfillment();
+      var word = mode === "delivery" ? "Delivery" : "Pickup";
+      var data = {
+        name: fd.get("name"), email: fd.get("email"), phone: fd.get("phone"),
+        address: fd.get("address"), date: fd.get("date"), notes: fd.get("notes") || ""
+      };
+      var s = summary(ls);
 
       if (SITE.formEndpoint) {
         var payload = {
-          _subject: "New CR Bakery order from " + data.name,
+          _subject: "New CR Bakery " + word.toLowerCase() + " order from " + data.name,
           name: data.name, email: data.email, phone: data.phone,
-          date_needed: data.date, order: s.text, estimated_total: s.total, notes: data.notes
+          fulfillment: word, address: data.address,
+          order: s.text, estimated_total: s.total, notes: data.notes
         };
+        payload[word.toLowerCase() + "_date"] = data.date;
         say("Sending your order...", "");
         fetch(SITE.formEndpoint, {
           method: "POST",
@@ -229,7 +349,7 @@
           if (!res.ok) throw new Error("bad response");
           form.reset();
           $all("[data-qty]", host).forEach(function (i) { i.value = 0; });
-          refresh();
+          applyFulfillment();
           say("Thanks, " + data.name + ". Your order was sent and CR Bakery will follow up by email.", "ok");
         }).catch(function () {
           // If the in-page send is blocked, send it as a regular form post instead.
@@ -237,10 +357,10 @@
         });
       } else if (SITE.email) {
         var body = "Name: " + data.name + "\nEmail: " + data.email + "\nPhone: " + data.phone +
-          "\nDate needed: " + data.date + "\n\nOrder:\n" + s.text + "\n\nEstimated total: " + s.total +
-          "\n\nNotes: " + data.notes;
+          "\nAddress: " + data.address + "\n" + word + " date: " + data.date + "\n\nOrder:\n" + s.text +
+          "\n\nEstimated total: " + s.total + "\n\nNotes: " + data.notes;
         window.location.href = "mailto:" + (SITE.email || "") +
-          "?subject=" + encodeURIComponent("New order from " + data.name) + "&body=" + encodeURIComponent(body);
+          "?subject=" + encodeURIComponent("New " + word.toLowerCase() + " order from " + data.name) + "&body=" + encodeURIComponent(body);
         say("Your email app should open with your order ready to send.", "ok");
       } else {
         statusEl.className = "form-status";
@@ -258,13 +378,14 @@
 
     var add = new URLSearchParams(window.location.search).get("add");
     if (add) orderApi.addItem(add);
-    refresh();
+    applyFulfillment();
   }
 
   document.addEventListener("DOMContentLoaded", function () {
     renderMenuPage();
     renderCardBlocks();
     fillContactLinks();
+    showClosureNotice();
     initOrderForm();
   });
 

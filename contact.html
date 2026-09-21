@@ -24,12 +24,13 @@
       </nav>
     </div>
   </header>
+  <div class="notice" data-closure-notice hidden><div class="wrap"></div></div>
 
   <main id="main">
     <div class="wrap">
       <div class="page-head">
         <h1>Order and contact</h1>
-        <p>Choose your cakes, tell us the date you need them, and CR Bakery will confirm your order.</p>
+        <p>Choose your cakes, pickup or delivery, and a date. Orders need at least <span data-lead-time>48 hours</span> of notice, and CR Bakery will confirm your order.</p>
       </div>
 
       <div class="order-layout">
@@ -38,6 +39,16 @@
             <legend>Your cakes</legend>
             <div id="order-items"></div>
             <div class="order-total"><span>Estimated total</span><span id="order-total">$0</span></div>
+            <p class="total-note" id="total-note" hidden></p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Pickup or delivery</legend>
+            <div class="choices">
+              <label class="choice is-selected"><input type="radio" name="fulfillment" value="pickup" checked><span>Pickup</span></label>
+              <label class="choice"><input type="radio" name="fulfillment" value="delivery"><span>Delivery</span></label>
+            </div>
+            <p class="field-hint" id="fulfillment-hint">Delivery is also available: <span data-delivery-text>$7.00 for up to 10 miles, plus $0.50 for each additional mile</span>.</p>
           </fieldset>
 
           <fieldset>
@@ -54,13 +65,18 @@
             </div>
             <div class="field-row">
               <div class="field">
-                <label for="f-phone">Phone (optional)</label>
-                <input id="f-phone" name="phone" type="tel" autocomplete="tel">
+                <label for="f-phone">Phone</label>
+                <input id="f-phone" name="phone" type="tel" autocomplete="tel" required>
               </div>
               <div class="field">
-                <label for="f-date">Date needed</label>
-                <input id="f-date" name="date" type="date" required>
+                <label for="f-date">Pickup date</label>
+                <input id="f-date" name="date" type="date" required aria-describedby="date-hint">
+                <p class="field-hint" id="date-hint">Orders need at least 48 hours of notice.</p>
               </div>
+            </div>
+            <div class="field">
+              <label for="f-address">Address</label>
+              <input id="f-address" name="address" type="text" autocomplete="street-address" placeholder="Street, city, ZIP" required>
             </div>
             <div class="field">
               <label for="f-notes">Notes (optional)</label>
