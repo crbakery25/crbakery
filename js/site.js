@@ -5,6 +5,22 @@
 
   var SITE = window.SITE || {};
   if (SITE.bookingApi) SITE.bookingApi = String(SITE.bookingApi).replace(/\/+$/, "");
+
+  /* Test version: on any address other than the live site (such as the Cloudflare Pages test site),
+     orders are never sent and times are never held, and a banner says so. */
+  var LIVE_HOSTS = ["crbakery25.com", "www.crbakery25.com"];
+  var TEST_MODE = LIVE_HOSTS.indexOf(window.location.hostname) === -1;
+  function showTestBanner() {
+    if (!TEST_MODE) return;
+    var bar = document.createElement("div");
+    bar.className = "test-banner";
+    bar.setAttribute("role", "note");
+    bar.textContent = "Test version: orders are not sent and times are not held.";
+    document.body.insertBefore(bar, document.body.firstChild);
+    var robots = document.createElement("meta");
+    robots.name = "robots"; robots.content = "noindex";
+    document.head.appendChild(robots);
+  }
   var MENU = window.MENU || { sections: [] };
 
   function $(sel, root) { return (root || document).querySelector(sel); }
@@ -614,6 +630,16 @@
         });
       }
 
+      if (TEST_MODE) {
+        /* Test version: skip the booking hold and the order email, but show the confirmation page */
+        if (saveConfirmation(record)) {
+          window.location.href = "order-confirmed.html?sent=" + record.sentAt;
+        } else {
+          say("Test version: your order was not sent.", "ok");
+        }
+        return;
+      }
+
       if (SITE.formEndpoint && SITE.bookingApi) {
         /* Hold the chosen time first so two customers can't take the same one */
         var chosen = timeSelect.options[timeSelect.selectedIndex];
@@ -661,6 +687,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    showTestBanner();
     renderMenuPage();
     renderCardBlocks();
     fillContactLinks();

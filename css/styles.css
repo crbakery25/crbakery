@@ -95,6 +95,13 @@ a { color: var(--navy); }
 .choice.is-selected { border-color: var(--navy); background: var(--mist); box-shadow: inset 0 0 0 1px var(--navy); }
 .total-note { margin: .35rem .75rem 0; font-size: .9rem; color: var(--muted); }
 
+/* Test version banner (shown only away from the live address) */
+.test-banner {
+  background: #fff4c2; color: #5c4400; border-bottom: 1px dashed #c9a227;
+  text-align: center; padding: .5rem 1rem; font-size: .9rem; font-weight: 600;
+}
+@media print { .test-banner { display: none !important; } }
+
 /* Closure notice */
 .notice { background: #f3ead6; color: var(--navy-deep); border-bottom: 1px solid #e1d3ae; padding: .6rem 0; font-size: .95rem; text-align: center; }
 
