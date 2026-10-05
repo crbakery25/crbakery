@@ -115,7 +115,6 @@
           <div class="order-breakdown" id="order-breakdown" hidden></div>
           <div class="order-total"><span>Estimated total</span><span id="order-total">$0</span></div>
           <p class="total-note" id="total-note" hidden></p>
-          <button class="btn btn-line btn-sm" type="button" id="print-summary-btn" hidden>Print order summary</button>
 
           <button class="btn btn-solid" type="submit">Send order</button>
           <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
@@ -163,12 +162,10 @@
     </div>
   </footer>
 
-  <div id="print-summary"></div>
-
   <script>
-    /* Script version: bump this number (in all four pages) whenever a js file changes, so visitors pick up the new file on their next visit. */
+    /* Script version: bump this number (in all five pages) whenever a js file changes, so visitors pick up the new file on their next visit. */
     (function () {
-      var v = 7;
+      var v = 8;
       ["site-config", "menu-data", "site"].forEach(function (n) {
         document.write('<script src="js/' + n + '.js?v=' + v + '"><\/script>');
       });

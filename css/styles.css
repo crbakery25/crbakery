@@ -263,26 +263,39 @@ a { color: var(--navy); }
 .form-status { margin: 1rem 0 0; min-height: 1.5rem; }
 .form-status.is-error { color: #9b1c1c; }
 .form-status.is-ok { color: #1f5f3b; }
-#print-summary-btn { margin-top: 1.25rem; }
 
-/* Printable order summary: hidden on screen, built just before printing.
-   Everything else is removed from the page with display:none (not just hidden visually),
-   so the printed page is only as tall as the summary - without this, the rest of the page's
-   full height still gets paginated even while invisible, printing several blank pages. */
-#print-summary { display: none; }
+/* Order confirmed page */
+.confirm { padding-bottom: clamp(3rem, 6vw, 5rem); }
+.confirm-grid {
+  display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start;
+  gap: clamp(1.25rem, 3vw, 2rem);
+}
+.confirm-card {
+  border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: var(--r);
+  padding: 1.5rem 1.75rem; background: #fff;
+}
+.confirm-card h2 { font-size: 1.35rem; margin-bottom: 1rem; }
+.confirm-card .breakdown-row { font-size: 1rem; color: var(--ink); }
+.confirm-card .order-total { padding: .9rem 0 0; }
+.confirm-note { margin: .85rem 0 0; font-size: .9rem; color: var(--muted); }
+.confirm-list { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .45rem 1.25rem; margin: 0; }
+.confirm-list dt { font-weight: 600; color: var(--navy); }
+.confirm-list dd { margin: 0; overflow-wrap: anywhere; }
+.confirm-pay { grid-column: 1 / -1; }
+.confirm-pay p { color: var(--muted); }
+.confirm-actions { margin-top: 2rem; }
+.print-only { display: none; }
+
+/* Printing the order confirmed page: only the order details and the customer's details */
 @media print {
-  body > *:not(#print-summary) { display: none !important; }
-  #print-summary {
-    display: block; color: #000;
-  }
-  #print-summary h1 { font: 400 1.7rem/1.2 var(--serif); margin: 0 0 .15rem; }
-  #print-summary h2 { font: 400 1.2rem/1.2 var(--serif); margin: .75rem 0 .5rem; }
-  #print-summary .breakdown-row { display: flex; justify-content: space-between; padding: .3rem 0; font-size: .95rem; }
-  #print-summary .order-total {
-    display: flex; justify-content: space-between; padding: .6rem 0; margin-top: .5rem;
-    border-top: 1.5px solid #000; font-weight: 600;
-  }
-  #print-summary .ps-footnote { margin-top: 1.25rem; font-size: .85rem; color: #444; }
+  .confirm-page .skip, .confirm-page .site-header, .confirm-page .notice,
+  .confirm-page .site-footer, .confirm-page .no-print { display: none !important; }
+  .confirm-page .print-only { display: block; }
+  .confirm-page .print-title { margin-bottom: 1.5rem; }
+  .confirm-page .print-brand { font: 400 1.7rem/1.2 var(--serif); color: var(--navy); margin: 0; }
+  .confirm-page .confirm-grid { display: block; }
+  .confirm-page .confirm-card { border: 0; padding: 0; margin-bottom: 1.75rem; }
+  .confirm-page .wrap { width: auto; }
 }
 
 .pay {
@@ -316,6 +329,7 @@ a { color: var(--navy); }
   .about-photo { max-width: 26rem; }
   .order-layout { grid-template-columns: 1fr; }
   .pay { position: static; }
+  .confirm-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 700px) {
   .rows { grid-template-columns: 1fr; }
@@ -324,6 +338,9 @@ a { color: var(--navy); }
   .cards { gap: 1.4rem 1rem; }
   .card-body h3 { font-size: 1rem; }
   .field-row { grid-template-columns: 1fr; gap: 0; }
+  .confirm-card { padding: 1.25rem; }
+  .confirm-list { grid-template-columns: 1fr; gap: 0 0; }
+  .confirm-list dd { margin-bottom: .6rem; }
   .nav { gap: 1rem; }
   .hero-photo { padding: 8px; }
 }

@@ -161,6 +161,74 @@
     $all("[data-lead-time]").forEach(function (el) { if (SITE.leadTimeHours) el.textContent = SITE.leadTimeHours + " hours"; });
   }
 
+  /* Order confirmation: the sent order is kept in this browser tab only (sessionStorage) */
+  var CONFIRM_KEY = "crbLastOrder";
+  function saveConfirmation(record) {
+    try { sessionStorage.setItem(CONFIRM_KEY, JSON.stringify(record)); return true; } catch (e) { return false; }
+  }
+
+  function renderConfirmation() {
+    var root = $("#confirm-root");
+    if (!root) return;
+    var o = null;
+    try { o = JSON.parse(sessionStorage.getItem(CONFIRM_KEY) || "null"); } catch (e) { o = null; }
+    var heading = $(".page-head h1");
+    var lede = $("#confirm-lede");
+    if (!o || !o.items || !o.items.length) {
+      if (heading) heading.textContent = "No recent order";
+      if (lede) lede.textContent = "We couldn't find a recent order in this browser.";
+      root.innerHTML = '<div class="actions"><a class="btn btn-solid" href="contact.html#order">Place an order</a>' +
+        '<a class="btn btn-line" href="menu.html">See the menu</a></div>';
+      return;
+    }
+
+    var first = String(o.name || "").split(" ")[0];
+    if (heading && first) heading.textContent = "Thank you, " + first;
+    var isDelivery = o.fulfillment === "Delivery";
+    var word = isDelivery ? "Delivery" : "Pickup";
+
+    var rows = o.items.map(function (l) {
+      return '<div class="breakdown-row"><span>' + l.qty + "&nbsp;&times;&nbsp;" + esc(l.name) +
+        "</span><span>" + money(l.qty * l.price) + "</span></div>";
+    }).join("");
+    if (isDelivery && o.fee > 0) {
+      rows += '<div class="breakdown-row is-delivery"><span>Delivery' + (o.miles ? " (about " + esc(o.miles) + " miles)" : "") +
+        "</span><span>" + money(o.fee) + "</span></div>";
+    }
+
+    var details = [
+      ["Name", o.name], ["Phone", o.phone], ["Email", o.email],
+      [word + " date", o.date ? shortDate(fromISO(o.date), true) : ""], [word + " time", o.time]
+    ];
+    if (isDelivery) details.push(["Address", o.address]);
+    if (o.notes) details.push(["Notes", o.notes]);
+    var list = details.filter(function (d) { return d[1]; }).map(function (d) {
+      return "<dt>" + esc(d[0]) + "</dt><dd>" + esc(d[1]) + "</dd>";
+    }).join("");
+
+    var sent = new Date(o.sentAt || Date.now());
+    root.innerHTML =
+      '<div class="print-only print-title"><p class="print-brand">CR Bakery</p>' +
+        "<p>Order sent " + esc(sent.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })) + "</p></div>" +
+      '<div class="confirm-grid">' +
+        '<section class="confirm-card" aria-labelledby="c-order"><h2 id="c-order">Order details</h2>' + rows +
+          '<div class="order-total"><span>Estimated total</span><span>' + esc(o.total) + "</span></div>" +
+          '<p class="confirm-note">CR Bakery will confirm your order and final total.</p></section>' +
+        '<section class="confirm-card" aria-labelledby="c-contact"><h2 id="c-contact">Your details</h2>' +
+          '<dl class="confirm-list">' + list + "</dl></section>" +
+        '<section class="confirm-card confirm-pay no-print" aria-labelledby="c-pay"><h2 id="c-pay">How to pay</h2>' +
+          "<p>CR Bakery takes payment by Venmo. Add your name to the payment note.</p>" +
+          "<p>Estimated total: <strong>" + esc(o.total) + "</strong></p>" +
+          '<a class="btn btn-solid" href="' + esc(SITE.venmoUrl || "#") + '" target="_blank" rel="noopener">Open Venmo</a></section>' +
+      "</div>" +
+      '<div class="actions confirm-actions no-print">' +
+        '<button type="button" class="btn btn-line" id="confirm-print">Print order details</button>' +
+        '<a class="btn btn-line" href="menu.html">Back to the menu</a></div>';
+
+    var printBtn = $("#confirm-print", root);
+    if (printBtn) printBtn.addEventListener("click", function () { window.print(); });
+  }
+
   /* Order form */
   var orderApi = null;
 
@@ -172,8 +240,6 @@
     var totalEl = $("#order-total");
     var breakdownEl = $("#order-breakdown");
     var breakdownHeadEl = $("#breakdown-head");
-    var printBtn = $("#print-summary-btn");
-    var printEl = $("#print-summary");
     var noteEl = $("#total-note");
     var statusEl = $("#form-status");
     var byId = {};
@@ -234,12 +300,10 @@
           breakdownEl.innerHTML = rows;
           breakdownEl.hidden = false;
           if (breakdownHeadEl) breakdownHeadEl.hidden = false;
-          if (printBtn) printBtn.hidden = false;
         } else {
           breakdownEl.innerHTML = "";
           breakdownEl.hidden = true;
           if (breakdownHeadEl) breakdownHeadEl.hidden = true;
-          if (printBtn) printBtn.hidden = true;
         }
       }
       if (isDelivery && sub > 0) {
@@ -442,34 +506,6 @@
       return { text: text, total: money(total), fee: fee };
     }
 
-    function printOrderSummary() {
-      var ls = lines();
-      if (!ls.length) {
-        say("Add at least one cake before printing a summary.", "error");
-        host.scrollIntoView({ block: "center" });
-        return;
-      }
-      var isDelivery = fulfillment() === "delivery";
-      var s = summary(ls);
-
-      var rows = ls.map(function (l) {
-        return '<div class="breakdown-row"><span>' + l.qty + "&nbsp;&times;&nbsp;" + esc(l.item.name) +
-          "</span><span>" + money(l.qty * l.item.price) + "</span></div>";
-      }).join("");
-      if (isDelivery && s.fee > 0) {
-        rows += '<div class="breakdown-row is-delivery"><span>Delivery</span><span>' + money(s.fee) + "</span></div>";
-      }
-
-      printEl.innerHTML =
-        "<h1>CR Bakery</h1><h2>Order details</h2>" +
-        rows +
-        '<div class="order-total"><span>Estimated total</span><span>' + s.total + "</span></div>" +
-        '<p class="ps-footnote">This is an estimate, not a confirmation. CR Bakery will confirm the order and final total.</p>';
-
-      window.print();
-    }
-    if (printBtn) printBtn.addEventListener("click", printOrderSummary);
-
     function postPlain(url, fields) {
       var f = document.createElement("form");
       f.method = "POST"; f.action = url; f.style.display = "none";
@@ -524,6 +560,13 @@
         date: fd.get("date"), time: fd.get("time"), notes: fd.get("notes") || ""
       };
       var s = summary(ls);
+      /* Kept in this browser tab only, for the order-confirmed page */
+      var record = {
+        name: data.name, phone: data.phone, email: data.email,
+        fulfillment: word, date: data.date, time: data.time, address: data.address, notes: data.notes,
+        items: ls.map(function (l) { return { name: l.item.name, qty: l.qty, price: l.item.price }; }),
+        fee: s.fee, miles: mode === "delivery" && quote ? quote.miles : null, total: s.total, sentAt: Date.now()
+      };
 
       function sendOrder(booking) {
         var payload = {
@@ -543,6 +586,10 @@
         }).then(function (res) {
           if (!res.ok) throw new Error("bad response");
           finishSlot(booking);
+          if (saveConfirmation(record)) {
+            window.location.href = "order-confirmed.html";
+            return;
+          }
           form.reset();
           $all("[data-qty]", host).forEach(function (i) { i.value = 0; });
           applyFulfillment();
@@ -606,6 +653,7 @@
     fillContactLinks();
     showClosureNotice();
     initOrderForm();
+    renderConfirmation();
   });
 
   window.CRB = { addItem: function (id) { if (orderApi) orderApi.addItem(id); } };
