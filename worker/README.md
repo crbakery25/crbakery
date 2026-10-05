@@ -14,7 +14,7 @@ Stops two orders from taking the same date and 15-minute time. No secrets are st
 
 ## Using it
 
-- Each order email has a `release_link`. Open it and click **Release this time** to free that slot.
+- To free a booked time (for example, a canceled order), open the admin page below and click **Release** next to it.
 - `https://<worker address>/admin?key=YOUR_ADMIN_KEY` lists every booked time with a Release button.
 - Bookings for dates that have passed are removed automatically (the day after).
 - A time held by someone who never finishes ordering frees itself after 5 minutes.

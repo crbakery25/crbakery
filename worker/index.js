@@ -7,7 +7,7 @@
      PICKUP_LAT       secret: pickup latitude (a plain number, e.g. 38.xxxxx) - never logged or returned
      PICKUP_LNG       secret: pickup longitude (a plain number, e.g. -121.xxxxx) - never logged or returned
      ORS_API_KEY      secret: free API key from openrouteservice.org, used to look up driving distance
-   The site calls /slots, /reserve, /finalize and /delivery-quote. The order email carries a /release link.
+   The site calls /slots, /reserve, /finalize and /delivery-quote. Booked times are freed from /admin.
    /delivery-quote never receives, stores or returns the pickup address or coordinates - only the
    resulting miles and fee. See README.md for setup, including how to find your own coordinates
    without sharing them with anyone. */

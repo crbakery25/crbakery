@@ -590,7 +590,6 @@
         };
         payload[word.toLowerCase() + "_date"] = data.date;
         payload[word.toLowerCase() + "_time"] = data.time;
-        if (booking) payload.release_link = booking.releaseUrl;
         say("Sending your order...", "");
         fetch(SITE.formEndpoint, {
           method: "POST",
