@@ -171,6 +171,9 @@
     var host = $("#order-items");
     var totalEl = $("#order-total");
     var breakdownEl = $("#order-breakdown");
+    var breakdownHeadEl = $("#breakdown-head");
+    var printBtn = $("#print-summary-btn");
+    var printEl = $("#print-summary");
     var noteEl = $("#total-note");
     var statusEl = $("#form-status");
     var byId = {};
@@ -230,9 +233,13 @@
           }
           breakdownEl.innerHTML = rows;
           breakdownEl.hidden = false;
+          if (breakdownHeadEl) breakdownHeadEl.hidden = false;
+          if (printBtn) printBtn.hidden = false;
         } else {
           breakdownEl.innerHTML = "";
           breakdownEl.hidden = true;
+          if (breakdownHeadEl) breakdownHeadEl.hidden = true;
+          if (printBtn) printBtn.hidden = true;
         }
       }
       if (isDelivery && sub > 0) {
@@ -434,6 +441,56 @@
       }
       return { text: text, total: money(total), fee: fee };
     }
+
+    function printOrderSummary() {
+      var ls = lines();
+      if (!ls.length) {
+        say("Add at least one cake before printing a summary.", "error");
+        host.scrollIntoView({ block: "center" });
+        return;
+      }
+      var mode = fulfillment();
+      var isDelivery = mode === "delivery";
+      var s = summary(ls);
+      var fd = new FormData(form);
+      var name = (fd.get("first_name") + " " + fd.get("last_name")).trim();
+      var phone = fd.get("phone") || "";
+      var email = fd.get("email") || "";
+      var date = fd.get("date") || "";
+      var time = fd.get("time") || "";
+      var address = isDelivery
+        ? [fd.get("street"), fd.get("city"), (String(fd.get("state") || "").toUpperCase() + " " + (fd.get("zip") || "")).trim()].filter(Boolean).join(", ")
+        : "";
+      var notes = fd.get("notes") || "";
+
+      var meta = "";
+      if (name) meta += "<div><strong>Name:</strong> " + esc(name) + "</div>";
+      if (phone) meta += "<div><strong>Phone:</strong> " + esc(phone) + "</div>";
+      if (email) meta += "<div><strong>Email:</strong> " + esc(email) + "</div>";
+      meta += "<div><strong>" + (isDelivery ? "Delivery" : "Pickup") + ":</strong> " +
+        (date ? esc(shortDate(fromISO(date), true)) : "date not yet chosen") +
+        (time ? " at " + esc(time) : "") + "</div>";
+      if (isDelivery && address) meta += "<div><strong>Address:</strong> " + esc(address) + "</div>";
+      if (notes) meta += "<div><strong>Notes:</strong> " + esc(notes) + "</div>";
+
+      var rows = ls.map(function (l) {
+        return '<div class="breakdown-row"><span>' + l.qty + "&nbsp;&times;&nbsp;" + esc(l.item.name) +
+          "</span><span>" + money(l.qty * l.item.price) + "</span></div>";
+      }).join("");
+      if (isDelivery && s.fee > 0) {
+        rows += '<div class="breakdown-row is-delivery"><span>Delivery</span><span>' + money(s.fee) + "</span></div>";
+      }
+
+      printEl.innerHTML =
+        "<h1>CR Bakery</h1><h2>Order summary</h2>" +
+        '<div class="ps-meta">' + meta + "</div>" +
+        rows +
+        '<div class="order-total"><span>Estimated total</span><span>' + s.total + "</span></div>" +
+        '<p class="ps-footnote">This is an estimate, not a confirmation. CR Bakery will confirm the order and final total.</p>';
+
+      window.print();
+    }
+    if (printBtn) printBtn.addEventListener("click", printOrderSummary);
 
     function postPlain(url, fields) {
       var f = document.createElement("form");

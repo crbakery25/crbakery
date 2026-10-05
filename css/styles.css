@@ -240,7 +240,8 @@ a { color: var(--navy); }
   font: 600 1rem var(--sans); color: var(--ink); -moz-appearance: textfield; appearance: textfield;
 }
 .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.order-breakdown { margin-top: 1.25rem; padding: 0 .75rem; }
+.breakdown-head { margin: 1.5rem 0 0; padding: 0 .75rem; font-size: 1.1rem; }
+.order-breakdown { margin-top: .5rem; padding: 0 .75rem; }
 .breakdown-row {
   display: flex; justify-content: space-between; gap: 1rem;
   padding: .3rem 0; font-size: .9rem; color: var(--muted);
@@ -262,6 +263,27 @@ a { color: var(--navy); }
 .form-status { margin: 1rem 0 0; min-height: 1.5rem; }
 .form-status.is-error { color: #9b1c1c; }
 .form-status.is-ok { color: #1f5f3b; }
+#print-summary-btn { margin-top: 1.25rem; }
+
+/* Printable order summary: hidden on screen, built just before printing */
+#print-summary { display: none; }
+@media print {
+  body * { visibility: hidden; }
+  #print-summary, #print-summary * { visibility: visible; }
+  #print-summary {
+    display: block; position: absolute; top: 0; left: 0; width: 100%;
+    padding: 0; color: #000;
+  }
+  #print-summary h1 { font: 400 1.7rem/1.2 var(--serif); margin: 0 0 .15rem; }
+  #print-summary h2 { font: 400 1.2rem/1.2 var(--serif); margin: 1.25rem 0 .5rem; }
+  #print-summary .ps-meta div { margin-bottom: .25rem; font-size: .95rem; }
+  #print-summary .breakdown-row { display: flex; justify-content: space-between; padding: .3rem 0; font-size: .95rem; }
+  #print-summary .order-total {
+    display: flex; justify-content: space-between; padding: .6rem 0; margin-top: .5rem;
+    border-top: 1.5px solid #000; font-weight: 600;
+  }
+  #print-summary .ps-footnote { margin-top: 1.25rem; font-size: .85rem; color: #444; }
+}
 
 .pay {
   border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: var(--r);
