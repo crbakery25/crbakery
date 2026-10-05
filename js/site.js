@@ -16,7 +16,14 @@
     bar.className = "test-banner";
     bar.setAttribute("role", "note");
     bar.textContent = "Test version: orders are not sent and times are not held.";
-    document.body.insertBefore(bar, document.body.firstChild);
+    // Inside the sticky header, so it stays at the top of the screen while scrolling
+    var header = $(".site-header");
+    if (header) header.insertBefore(bar, header.firstChild);
+    else document.body.insertBefore(bar, document.body.firstChild);
+    // Let the page make room for it (jump links and the sticky payment box)
+    function setBannerHeight() { document.documentElement.style.setProperty("--test-banner-h", bar.offsetHeight + "px"); }
+    setBannerHeight();
+    window.addEventListener("resize", setBannerHeight);
     var robots = document.createElement("meta");
     robots.name = "robots"; robots.content = "noindex";
     document.head.appendChild(robots);

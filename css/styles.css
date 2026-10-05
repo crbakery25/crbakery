@@ -23,7 +23,7 @@
 *, *::before, *::after { box-sizing: inherit; }
 
 html {
-  scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 92px);
+  scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 92px + var(--test-banner-h, 0px));
   -webkit-text-size-adjust: 100%;
 }
 
@@ -307,7 +307,7 @@ a { color: var(--navy); }
 
 .pay {
   border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: var(--r);
-  padding: 1.75rem; background: #fff; position: sticky; top: 108px;
+  padding: 1.75rem; background: #fff; position: sticky; top: calc(108px + var(--test-banner-h, 0px));
 }
 .pay h2 { font-size: 1.35rem; }
 .pay p { color: var(--muted); }
