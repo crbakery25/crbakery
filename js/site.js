@@ -449,29 +449,8 @@
         host.scrollIntoView({ block: "center" });
         return;
       }
-      var mode = fulfillment();
-      var isDelivery = mode === "delivery";
+      var isDelivery = fulfillment() === "delivery";
       var s = summary(ls);
-      var fd = new FormData(form);
-      var name = (fd.get("first_name") + " " + fd.get("last_name")).trim();
-      var phone = fd.get("phone") || "";
-      var email = fd.get("email") || "";
-      var date = fd.get("date") || "";
-      var time = fd.get("time") || "";
-      var address = isDelivery
-        ? [fd.get("street"), fd.get("city"), (String(fd.get("state") || "").toUpperCase() + " " + (fd.get("zip") || "")).trim()].filter(Boolean).join(", ")
-        : "";
-      var notes = fd.get("notes") || "";
-
-      var meta = "";
-      if (name) meta += "<div><strong>Name:</strong> " + esc(name) + "</div>";
-      if (phone) meta += "<div><strong>Phone:</strong> " + esc(phone) + "</div>";
-      if (email) meta += "<div><strong>Email:</strong> " + esc(email) + "</div>";
-      meta += "<div><strong>" + (isDelivery ? "Delivery" : "Pickup") + ":</strong> " +
-        (date ? esc(shortDate(fromISO(date), true)) : "date not yet chosen") +
-        (time ? " at " + esc(time) : "") + "</div>";
-      if (isDelivery && address) meta += "<div><strong>Address:</strong> " + esc(address) + "</div>";
-      if (notes) meta += "<div><strong>Notes:</strong> " + esc(notes) + "</div>";
 
       var rows = ls.map(function (l) {
         return '<div class="breakdown-row"><span>' + l.qty + "&nbsp;&times;&nbsp;" + esc(l.item.name) +
@@ -482,8 +461,7 @@
       }
 
       printEl.innerHTML =
-        "<h1>CR Bakery</h1><h2>Order summary</h2>" +
-        '<div class="ps-meta">' + meta + "</div>" +
+        "<h1>CR Bakery</h1><h2>Order details</h2>" +
         rows +
         '<div class="order-total"><span>Estimated total</span><span>' + s.total + "</span></div>" +
         '<p class="ps-footnote">This is an estimate, not a confirmation. CR Bakery will confirm the order and final total.</p>';

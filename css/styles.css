@@ -275,8 +275,7 @@ a { color: var(--navy); }
     padding: 0; color: #000;
   }
   #print-summary h1 { font: 400 1.7rem/1.2 var(--serif); margin: 0 0 .15rem; }
-  #print-summary h2 { font: 400 1.2rem/1.2 var(--serif); margin: 1.25rem 0 .5rem; }
-  #print-summary .ps-meta div { margin-bottom: .25rem; font-size: .95rem; }
+  #print-summary h2 { font: 400 1.2rem/1.2 var(--serif); margin: .75rem 0 .5rem; }
   #print-summary .breakdown-row { display: flex; justify-content: space-between; padding: .3rem 0; font-size: .95rem; }
   #print-summary .order-total {
     display: flex; justify-content: space-between; padding: .6rem 0; margin-top: .5rem;
