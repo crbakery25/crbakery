@@ -1,9 +1,16 @@
-/* CR Bakery booking service: one order per date and 15-minute time.
+/* CR Bakery booking service: one order per date and 15-minute time,
+   plus a delivery fee calculator that never reveals the pickup address.
    Runs as a Cloudflare Worker with a D1 database bound as DB.
    Settings (Worker > Settings > Variables and Secrets):
      ALLOWED_ORIGINS  comma-separated site addresses allowed to call this service
      ADMIN_KEY        secret used to open the /admin page
-   The site calls /slots, /reserve and /finalize. The order email carries a /release link. */
+     PICKUP_LAT       secret: pickup latitude (a plain number, e.g. 38.xxxxx) - never logged or returned
+     PICKUP_LNG       secret: pickup longitude (a plain number, e.g. -121.xxxxx) - never logged or returned
+     ORS_API_KEY      secret: free API key from openrouteservice.org, used to look up driving distance
+   The site calls /slots, /reserve, /finalize and /delivery-quote. The order email carries a /release link.
+   /delivery-quote never receives, stores or returns the pickup address or coordinates - only the
+   resulting miles and fee. See README.md for setup, including how to find your own coordinates
+   without sharing them with anyone. */
 
 const HOLD_MINUTES = 5; // a time held while an order is being sent frees itself after this long
 const MAX_PER_HOUR = 5;    // most times one visitor (IP address) can hold or book in an hour
@@ -20,6 +27,7 @@ export default {
       if (request.method === "GET" && path === "/slots") return await getSlots(url, env, cors);
       if (request.method === "POST" && path === "/reserve") return await reserve(request, env, cors, url);
       if (request.method === "POST" && path === "/finalize") return await finalize(request, env, cors);
+      if (request.method === "GET" && path === "/delivery-quote") return await deliveryQuote(url, env, cors);
       if (path === "/release") return await release(request, env, url);
       if (path === "/admin") return await admin(request, env, url);
       return json({ error: "Not found" }, 404, cors);
@@ -76,6 +84,48 @@ async function finalize(request, env, cors) {
     "UPDATE bookings SET status = 'booked', expires_at = NULL WHERE token = ? AND (status = 'booked' OR expires_at >= ?)"
   ).bind(token, Date.now()).run();
   return json({ ok: result.meta.changes > 0 }, 200, cors);
+}
+
+/* Calculates a driving-distance delivery fee without ever revealing the pickup point.
+   address, baseFee, baseMiles and perMile come from the customer's browser (baseFee/baseMiles/perMile
+   just mirror the site's own public pricing - nothing financial depends on this quote; a real order
+   is always confirmed by the owner). PICKUP_LAT/PICKUP_LNG/ORS_API_KEY are secrets set in Cloudflare
+   and are never included in the response. */
+async function deliveryQuote(url, env, cors) {
+  const address = (url.searchParams.get("address") || "").trim().slice(0, 200);
+  const baseFeeRaw = url.searchParams.get("baseFee"), baseMilesRaw = url.searchParams.get("baseMiles"), perMileRaw = url.searchParams.get("perMile");
+  if (address.length < 8) return json({ ok: false, reason: "address" }, 200, cors);
+  if (baseFeeRaw === null || baseMilesRaw === null || perMileRaw === null) return json({ ok: false, reason: "pricing" }, 200, cors);
+  const baseFee = Number(baseFeeRaw), baseMiles = Number(baseMilesRaw), perMile = Number(perMileRaw);
+  if (!isFinite(baseFee) || !isFinite(baseMiles) || !isFinite(perMile)) return json({ ok: false, reason: "pricing" }, 200, cors);
+  if (!env.ORS_API_KEY || !env.PICKUP_LAT || !env.PICKUP_LNG) return json({ ok: false, reason: "not_configured" }, 200, cors);
+
+  try {
+    const geoRes = await fetch("https://api.openrouteservice.org/geocode/search?" + new URLSearchParams({
+      api_key: env.ORS_API_KEY, text: address, size: "1", "boundary.country": "US"
+    }));
+    if (!geoRes.ok) return json({ ok: false, reason: "geocode" }, 200, cors);
+    const geo = await geoRes.json();
+    const feature = geo.features && geo.features[0];
+    if (!feature) return json({ ok: false, reason: "not_found" }, 200, cors);
+    const [lon, lat] = feature.geometry.coordinates;
+
+    const dirRes = await fetch("https://api.openrouteservice.org/v2/directions/driving-car?" + new URLSearchParams({
+      api_key: env.ORS_API_KEY,
+      start: env.PICKUP_LNG + "," + env.PICKUP_LAT,
+      end: lon + "," + lat
+    }));
+    if (!dirRes.ok) return json({ ok: false, reason: "route" }, 200, cors);
+    const dir = await dirRes.json();
+    const summary = dir.features && dir.features[0] && dir.features[0].properties && dir.features[0].properties.summary;
+    if (!summary) return json({ ok: false, reason: "route" }, 200, cors);
+
+    const miles = summary.distance / 1609.344;
+    const fee = baseFee + Math.max(0, miles - baseMiles) * perMile;
+    return json({ ok: true, miles: Math.round(miles * 10) / 10, fee: Math.round(fee * 100) / 100 }, 200, cors);
+  } catch (err) {
+    return json({ ok: false, reason: "error" }, 200, cors);
+  }
 }
 
 /* ---------- Owner pages (opened from the order email or /admin) ---------- */

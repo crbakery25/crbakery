@@ -214,10 +214,18 @@
       });
       var sub = subtotal();
       var isDelivery = fulfillment() === "delivery";
-      var total = sub + (isDelivery && sub > 0 ? dv.baseFee : 0);
+      var fee = quote ? quote.fee : dv.baseFee;
+      var total = sub + (isDelivery && sub > 0 ? fee : 0);
       totalEl.textContent = money(total);
       if (isDelivery && sub > 0) {
-        noteEl.textContent = "Includes a " + moneyFull(dv.baseFee) + " delivery fee. If your address needs a higher fee, CR Bakery will let you know before confirming your total.";
+        if (quote) {
+          noteEl.textContent = "Includes an estimated delivery fee of " + moneyFull(quote.fee) +
+            " (about " + quote.miles + (quote.miles === 1 ? " mile" : " miles") + "). CR Bakery will confirm your final total.";
+        } else if (quotePending) {
+          noteEl.textContent = "Calculating your delivery fee...";
+        } else {
+          noteEl.textContent = "Includes a " + moneyFull(dv.baseFee) + " delivery fee. If your address needs a higher fee, CR Bakery will let you know before confirming your total.";
+        }
         noteEl.hidden = false;
       } else {
         noteEl.hidden = true;
@@ -292,6 +300,44 @@
     buildTimes();
     var addressBox = $("#address-fields", form);
     var addressInputs = $all("input", addressBox);
+    var streetInput = $("#f-street", form), cityInput = $("#f-city", form), stateInput = $("#f-state", form), zipInput = $("#f-zip", form);
+
+    /* Live delivery fee: calculated from driving distance by the booking service, which keeps the
+       pickup address private. Falls back to the flat fee if the service isn't set up or can't answer. */
+    var quote = null, quotePending = false, quoteTimer = null, quoteSeq = 0;
+    function addressReady() {
+      return streetInput && streetInput.value.trim().length > 3 &&
+        cityInput && cityInput.value.trim() &&
+        stateInput && /^[A-Za-z]{2}$/.test(stateInput.value.trim()) &&
+        zipInput && /^\d{5}$/.test(zipInput.value.trim());
+    }
+    function requestQuote() {
+      if (!SITE.bookingApi || !addressReady()) { quotePending = false; refresh(); return; }
+      var address = [streetInput.value, cityInput.value, stateInput.value.toUpperCase() + " " + zipInput.value].join(", ");
+      var params = new URLSearchParams({ address: address, baseFee: dv.baseFee, baseMiles: dv.baseMiles, perMile: dv.perMile });
+      var at = ++quoteSeq;
+      fetch(SITE.bookingApi + "/delivery-quote?" + params, { cache: "no-store" })
+        .then(function (res) { return res.json(); })
+        .then(function (d) {
+          if (at !== quoteSeq) return;
+          quotePending = false;
+          quote = (d && d.ok) ? { miles: d.miles, fee: d.fee } : null;
+          refresh();
+        })
+        .catch(function () {
+          if (at !== quoteSeq) return;
+          quotePending = false; quote = null; refresh();
+        });
+    }
+    function scheduleQuote() {
+      quote = null;
+      clearTimeout(quoteTimer);
+      if (!addressReady()) { quotePending = false; refresh(); return; }
+      quotePending = true;
+      quoteTimer = setTimeout(requestQuote, 700);
+      refresh();
+    }
+    addressInputs.forEach(function (i) { i.addEventListener("input", scheduleQuote); });
     var dateHint = $("#date-hint");
     var lead = Number(SITE.leadTimeHours) || 0;
     var minStr = firstOpenDay(isoOf(new Date(Date.now() + lead * 3600 * 1000)));
@@ -340,6 +386,11 @@
           ? "Delivery adds " + moneyFull(dv.baseFee) + " to your total. If your address needs a higher fee, CR Bakery will let you know."
           : "Delivery is also available: " + deliveryText() + ".";
       }
+      if (mode === "delivery") {
+        scheduleQuote();
+      } else {
+        quote = null; quotePending = false; clearTimeout(quoteTimer);
+      }
       refresh();
     }
     $all('input[name="fulfillment"]', form).forEach(function (r) { r.addEventListener("change", applyFulfillment); });
@@ -354,8 +405,10 @@
       var text = ls.map(function (l) { return l.qty + " x " + l.item.name + " (" + money(l.item.price) + " each)"; }).join("\n");
       var total = sub, fee = 0;
       if (fulfillment() === "delivery") {
-        fee = dv.baseFee; total += fee;
-        text += "\nDelivery: " + moneyFull(fee) + " (final fee to be confirmed if the address is farther)";
+        fee = quote ? quote.fee : dv.baseFee; total += fee;
+        text += quote
+          ? "\nDelivery: " + moneyFull(fee) + " (about " + quote.miles + " miles; final fee to be confirmed)"
+          : "\nDelivery: " + moneyFull(fee) + " (final fee to be confirmed if the address is farther)";
       }
       return { text: text, total: money(total), fee: fee };
     }
