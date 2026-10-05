@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Order and contact | CR Bakery</title>
-  <meta name="description" content="Order a cheesecake from CR Bakery, pay with Venmo, or get in touch.">
+  <meta name="description" content="Order a cheesecake from CR Bakery, pay with Venmo or cash, or get in touch.">
   <meta name="theme-color" content="#141b40">
   <link rel="icon" href="images/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -111,6 +111,15 @@
             </div>
           </fieldset>
 
+          <fieldset>
+            <legend>Payment</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="payment" value="Venmo" required><span>Venmo</span></label>
+              <label class="choice"><input type="radio" name="payment" value="Cash"><span>Cash</span></label>
+            </div>
+            <p class="field-hint" id="payment-hint">Choose one. Cash is paid at pickup or delivery.</p>
+          </fieldset>
+
           <h2 class="breakdown-head" id="breakdown-head" hidden>Order details</h2>
           <div class="order-breakdown" id="order-breakdown" hidden></div>
           <div class="order-total"><span>Estimated total</span><span id="order-total">$0</span></div>
@@ -121,8 +130,8 @@
         </form>
 
         <aside class="pay" aria-labelledby="pay-title">
-          <h2 id="pay-title">Pay with Venmo</h2>
-          <p>Add your name to the payment note.</p>
+          <h2 id="pay-title">How to pay</h2>
+          <p>Pay with Venmo and add your name to the payment note, or pay with cash at pickup or delivery.</p>
           <a class="btn btn-line" data-venmo-link href="#" target="_blank" rel="noopener">Open Venmo</a>
           <hr>
           <h2>Questions?</h2>
@@ -165,7 +174,7 @@
   <script>
     /* Script version: bump this number (in all five pages) whenever a js file changes, so visitors pick up the new file on their next visit. */
     (function () {
-      var v = 8;
+      var v = 9;
       ["site-config", "menu-data", "site"].forEach(function (n) {
         document.write('<script src="js/' + n + '.js?v=' + v + '"><\/script>');
       });

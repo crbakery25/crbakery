@@ -201,7 +201,16 @@
       [word + " date", o.date ? shortDate(fromISO(o.date), true) : ""], [word + " time", o.time]
     ];
     if (isDelivery) details.push(["Address", o.address]);
+    if (o.payment) details.push(["Payment", o.payment]);
     if (o.notes) details.push(["Notes", o.notes]);
+
+    var isCash = o.payment === "Cash";
+    var payHtml = isCash
+      ? "<p>You chose to pay with cash. Please have it ready at " + word.toLowerCase() + ".</p>" +
+        "<p>Estimated total: <strong>" + esc(o.total) + "</strong></p>"
+      : "<p>You chose to pay with Venmo. Add your name to the payment note.</p>" +
+        "<p>Estimated total: <strong>" + esc(o.total) + "</strong></p>" +
+        '<a class="btn btn-solid" href="' + esc(SITE.venmoUrl || "#") + '" target="_blank" rel="noopener">Open Venmo</a>';
     var list = details.filter(function (d) { return d[1]; }).map(function (d) {
       return "<dt>" + esc(d[0]) + "</dt><dd>" + esc(d[1]) + "</dd>";
     }).join("");
@@ -217,9 +226,7 @@
         '<section class="confirm-card" aria-labelledby="c-contact"><h2 id="c-contact">Your details</h2>' +
           '<dl class="confirm-list">' + list + "</dl></section>" +
         '<section class="confirm-card confirm-pay no-print" aria-labelledby="c-pay"><h2 id="c-pay">How to pay</h2>' +
-          "<p>CR Bakery takes payment by Venmo. Add your name to the payment note.</p>" +
-          "<p>Estimated total: <strong>" + esc(o.total) + "</strong></p>" +
-          '<a class="btn btn-solid" href="' + esc(SITE.venmoUrl || "#") + '" target="_blank" rel="noopener">Open Venmo</a></section>' +
+          payHtml + "</section>" +
       "</div>" +
       '<div class="actions confirm-actions no-print">' +
         '<button type="button" class="btn btn-line" id="confirm-print">Print order details</button>' +
@@ -455,15 +462,21 @@
       dateInput.addEventListener("change", refreshTimes);
     }
 
+    /* Highlights the chosen option in each group of choices (pickup or delivery, payment) */
+    function markChoices() {
+      $all(".choice", form).forEach(function (c) {
+        c.classList.toggle("is-selected", $("input", c).checked);
+      });
+    }
+    $all('input[name="payment"]', form).forEach(function (r) { r.addEventListener("change", markChoices); });
+
     /* Pickup or delivery */
     var fulfillHint = $("#fulfillment-hint");
     function applyFulfillment() {
       buildTimes();
       var mode = fulfillment();
       var word = mode === "delivery" ? "delivery" : "pickup";
-      $all(".choice", form).forEach(function (c) {
-        c.classList.toggle("is-selected", $("input", c).checked);
-      });
+      markChoices();
       var cap = word.charAt(0).toUpperCase() + word.slice(1);
       if (dateLabel) dateLabel.textContent = cap + " date";
       if (timeLabel) timeLabel.textContent = cap + " time";
@@ -557,13 +570,13 @@
         address: mode === "delivery"
           ? [fd.get("street"), fd.get("city"), String(fd.get("state")).toUpperCase() + " " + fd.get("zip")].join(", ")
           : "",
-        date: fd.get("date"), time: fd.get("time"), notes: fd.get("notes") || ""
+        date: fd.get("date"), time: fd.get("time"), payment: fd.get("payment") || "", notes: fd.get("notes") || ""
       };
       var s = summary(ls);
       /* Kept in this browser tab only, for the order-confirmed page */
       var record = {
         name: data.name, phone: data.phone, email: data.email,
-        fulfillment: word, date: data.date, time: data.time, address: data.address, notes: data.notes,
+        fulfillment: word, date: data.date, time: data.time, address: data.address, payment: data.payment, notes: data.notes,
         items: ls.map(function (l) { return { name: l.item.name, qty: l.qty, price: l.item.price }; }),
         fee: s.fee, miles: mode === "delivery" && quote ? quote.miles : null, total: s.total, sentAt: Date.now()
       };
@@ -572,7 +585,7 @@
         var payload = {
           _subject: "New CR Bakery " + word.toLowerCase() + " order from " + data.name,
           name: data.name, email: data.email, phone: data.phone,
-          fulfillment: word, address: data.address,
+          fulfillment: word, address: data.address, payment: data.payment,
           order: s.text, estimated_total: s.total, notes: data.notes
         };
         payload[word.toLowerCase() + "_date"] = data.date;
@@ -624,7 +637,7 @@
       } else if (SITE.email) {
         var body = "Name: " + data.name + "\nEmail: " + data.email + "\nPhone: " + data.phone +
           (data.address ? "\nAddress: " + data.address : "") + "\n" + word + " date: " + data.date + "\n" + word + " time: " + data.time + "\n\nOrder:\n" + s.text +
-          "\n\nEstimated total: " + s.total + "\n\nNotes: " + data.notes;
+          "\n\nEstimated total: " + s.total + "\nPayment: " + data.payment + "\n\nNotes: " + data.notes;
         window.location.href = "mailto:" + (SITE.email || "") +
           "?subject=" + encodeURIComponent("New " + word.toLowerCase() + " order from " + data.name) + "&body=" + encodeURIComponent(body);
         say("Your email app should open with your order ready to send.", "ok");
