@@ -265,14 +265,15 @@ a { color: var(--navy); }
 .form-status.is-ok { color: #1f5f3b; }
 #print-summary-btn { margin-top: 1.25rem; }
 
-/* Printable order summary: hidden on screen, built just before printing */
+/* Printable order summary: hidden on screen, built just before printing.
+   Everything else is removed from the page with display:none (not just hidden visually),
+   so the printed page is only as tall as the summary - without this, the rest of the page's
+   full height still gets paginated even while invisible, printing several blank pages. */
 #print-summary { display: none; }
 @media print {
-  body * { visibility: hidden; }
-  #print-summary, #print-summary * { visibility: visible; }
+  body > *:not(#print-summary) { display: none !important; }
   #print-summary {
-    display: block; position: absolute; top: 0; left: 0; width: 100%;
-    padding: 0; color: #000;
+    display: block; color: #000;
   }
   #print-summary h1 { font: 400 1.7rem/1.2 var(--serif); margin: 0 0 .15rem; }
   #print-summary h2 { font: 400 1.2rem/1.2 var(--serif); margin: .75rem 0 .5rem; }
