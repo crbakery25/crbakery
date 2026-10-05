@@ -600,7 +600,8 @@
           if (!res.ok) throw new Error("bad response");
           finishSlot(booking);
           if (saveConfirmation(record)) {
-            window.location.href = "order-confirmed.html";
+            // A unique address each time, so the browser never shows an older cached copy of the page
+            window.location.href = "order-confirmed.html?sent=" + record.sentAt;
             return;
           }
           form.reset();
