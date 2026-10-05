@@ -30,7 +30,7 @@
     <div class="wrap">
       <div class="page-head">
         <h1>Menu</h1>
-        <p>Please order at least <span data-lead-time>48 hours</span> ahead. Delivery is available: <span data-delivery-text>$7.00 for up to 10 miles, plus $0.50 for each additional mile</span>. Select a cake to add it to your order.</p>
+        <p>Please order at least <span data-lead-time>48 hours</span> ahead. Delivery is available: <span data-delivery-text>$7.00 for up to 5 miles, plus $0.75 for each additional mile (within 20 miles)</span>. Select a cake to add it to your order.</p>
       </div>
       <div id="menu-root" class="menu-root"></div>
     </div>
@@ -68,7 +68,7 @@
   <script>
     /* Script version: bump this number (in all four pages) whenever a js file changes, so visitors pick up the new file on their next visit. */
     (function () {
-      var v = 3;
+      var v = 4;
       ["site-config", "menu-data", "site"].forEach(function (n) {
         document.write('<script src="js/' + n + '.js?v=' + v + '"><\/script>');
       });

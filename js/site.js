@@ -214,11 +214,13 @@
       });
       var sub = subtotal();
       var isDelivery = fulfillment() === "delivery";
-      var fee = quote ? quote.fee : dv.baseFee;
+      var fee = tooFar ? 0 : (quote ? quote.fee : dv.baseFee);
       var total = sub + (isDelivery && sub > 0 ? fee : 0);
       totalEl.textContent = money(total);
       if (isDelivery && sub > 0) {
-        if (quote) {
+        if (tooFar) {
+          noteEl.textContent = "Sorry, that address is outside CR Bakery's " + tooFar + "-mile delivery area. Please choose pickup, or message CR Bakery about other options.";
+        } else if (quote) {
           noteEl.textContent = "Includes an estimated delivery fee of " + moneyFull(quote.fee) +
             " (about " + quote.miles + (quote.miles === 1 ? " mile" : " miles") + "). CR Bakery will confirm your final total.";
         } else if (quotePending) {
@@ -304,7 +306,7 @@
 
     /* Live delivery fee: calculated from driving distance by the booking service, which keeps the
        pickup address private. Falls back to the flat fee if the service isn't set up or can't answer. */
-    var quote = null, quotePending = false, quoteTimer = null, quoteSeq = 0;
+    var quote = null, quotePending = false, quoteTimer = null, quoteSeq = 0, tooFar = null;
     function addressReady() {
       return streetInput && streetInput.value.trim().length > 3 &&
         cityInput && cityInput.value.trim() &&
@@ -321,16 +323,18 @@
         .then(function (d) {
           if (at !== quoteSeq) return;
           quotePending = false;
-          quote = (d && d.ok) ? { miles: d.miles, fee: d.fee } : null;
+          if (d && d.ok) { quote = { miles: d.miles, fee: d.fee }; tooFar = null; }
+          else if (d && d.reason === "too_far") { quote = null; tooFar = d.maxMiles || null; }
+          else { quote = null; tooFar = null; }
           refresh();
         })
         .catch(function () {
           if (at !== quoteSeq) return;
-          quotePending = false; quote = null; refresh();
+          quotePending = false; quote = null; tooFar = null; refresh();
         });
     }
     function scheduleQuote() {
-      quote = null;
+      quote = null; tooFar = null;
       clearTimeout(quoteTimer);
       if (!addressReady()) { quotePending = false; refresh(); return; }
       quotePending = true;
@@ -389,7 +393,7 @@
       if (mode === "delivery") {
         scheduleQuote();
       } else {
-        quote = null; quotePending = false; clearTimeout(quoteTimer);
+        quote = null; quotePending = false; tooFar = null; clearTimeout(quoteTimer);
       }
       refresh();
     }
@@ -404,7 +408,7 @@
       var sub = ls.reduce(function (sum, l) { return sum + l.qty * l.item.price; }, 0);
       var text = ls.map(function (l) { return l.qty + " x " + l.item.name + " (" + money(l.item.price) + " each)"; }).join("\n");
       var total = sub, fee = 0;
-      if (fulfillment() === "delivery") {
+      if (fulfillment() === "delivery" && !tooFar) {
         fee = quote ? quote.fee : dv.baseFee; total += fee;
         text += quote
           ? "\nDelivery: " + moneyFull(fee) + " (about " + quote.miles + " miles; final fee to be confirmed)"
@@ -454,6 +458,10 @@
       }
       var fd = new FormData(form);
       var mode = fulfillment();
+      if (mode === "delivery" && tooFar) {
+        say("Sorry, that address is outside CR Bakery's " + tooFar + "-mile delivery area. Please choose pickup, or message CR Bakery about other options.", "error");
+        return;
+      }
       var word = mode === "delivery" ? "Delivery" : "Pickup";
       var data = {
         name: (fd.get("first_name") + " " + fd.get("last_name")).trim(), email: fd.get("email") || "", phone: fd.get("phone"),

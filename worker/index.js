@@ -16,6 +16,7 @@ const HOLD_MINUTES = 5; // a time held while an order is being sent frees itself
 const MAX_PER_HOUR = 5;    // most times one visitor (IP address) can hold or book in an hour
 const OPEN_MIN = 9 * 60;   // 9:00 AM
 const CLOSE_MIN = 19 * 60; // 7:00 PM
+const MAX_DELIVERY_MILES = 20; // addresses farther than this by driving distance are declined for delivery
 
 export default {
   async fetch(request, env) {
@@ -90,7 +91,8 @@ async function finalize(request, env, cors) {
    address, baseFee, baseMiles and perMile come from the customer's browser (baseFee/baseMiles/perMile
    just mirror the site's own public pricing - nothing financial depends on this quote; a real order
    is always confirmed by the owner). PICKUP_LAT/PICKUP_LNG/ORS_API_KEY are secrets set in Cloudflare
-   and are never included in the response. */
+   and are never included in the response. Addresses farther than MAX_DELIVERY_MILES are declined
+   (reason "too_far") before any fee is calculated. */
 async function deliveryQuote(url, env, cors) {
   const address = (url.searchParams.get("address") || "").trim().slice(0, 200);
   const baseFeeRaw = url.searchParams.get("baseFee"), baseMilesRaw = url.searchParams.get("baseMiles"), perMileRaw = url.searchParams.get("perMile");
@@ -121,6 +123,7 @@ async function deliveryQuote(url, env, cors) {
     if (!summary) return json({ ok: false, reason: "route" }, 200, cors);
 
     const miles = summary.distance / 1609.344;
+    if (miles > MAX_DELIVERY_MILES) return json({ ok: false, reason: "too_far", maxMiles: MAX_DELIVERY_MILES }, 200, cors);
     const fee = baseFee + Math.max(0, miles - baseMiles) * perMile;
     return json({ ok: true, miles: Math.round(miles * 10) / 10, fee: Math.round(fee * 100) / 100 }, 200, cors);
   } catch (err) {
