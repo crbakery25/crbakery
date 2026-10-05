@@ -170,6 +170,7 @@
 
     var host = $("#order-items");
     var totalEl = $("#order-total");
+    var breakdownEl = $("#order-breakdown");
     var noteEl = $("#total-note");
     var statusEl = $("#form-status");
     var byId = {};
@@ -212,11 +213,28 @@
       $all(".order-row", host).forEach(function (row) {
         row.classList.toggle("is-selected", rowQty(row) > 0);
       });
+      var ls = lines();
       var sub = subtotal();
       var isDelivery = fulfillment() === "delivery";
       var fee = tooFar ? 0 : (quote ? quote.fee : dv.baseFee);
       var total = sub + (isDelivery && sub > 0 ? fee : 0);
       totalEl.textContent = money(total);
+      if (breakdownEl) {
+        if (ls.length) {
+          var rows = ls.map(function (l) {
+            return '<div class="breakdown-row"><span>' + l.qty + "&nbsp;&times;&nbsp;" + esc(l.item.name) +
+              "</span><span>" + money(l.qty * l.item.price) + "</span></div>";
+          }).join("");
+          if (isDelivery && sub > 0 && !tooFar) {
+            rows += '<div class="breakdown-row is-delivery"><span>Delivery</span><span>' + money(fee) + "</span></div>";
+          }
+          breakdownEl.innerHTML = rows;
+          breakdownEl.hidden = false;
+        } else {
+          breakdownEl.innerHTML = "";
+          breakdownEl.hidden = true;
+        }
+      }
       if (isDelivery && sub > 0) {
         if (tooFar) {
           noteEl.textContent = "Sorry, that address is outside CR Bakery's " + tooFar + "-mile delivery area. Please choose pickup, or message CR Bakery about other options.";
