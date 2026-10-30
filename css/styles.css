@@ -143,14 +143,9 @@ a { color: var(--navy); }
 .hero h1::before {
   content: ""; display: block; width: 56px; height: 2px; background: var(--gold); margin-bottom: 1.5rem;
 }
-/* Big logo at the top of the home page hero, on a white circle with a soft gold ring */
-.hero-logo {
-  width: 230px; height: 230px; border-radius: 50%; background: #fff;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 0 0 6px rgba(195,156,91,.3); overflow: hidden;
-  margin-bottom: 2rem;
-}
-.hero-logo img { display: block; width: 86%; height: auto; }
+/* Big logo at the top of the home page hero (transparent version, straight on the navy) */
+.hero-logo { width: 260px; margin-bottom: 1.5rem; }
+.hero-logo img { display: block; width: 100%; height: auto; }
 .hero-logo + h1::before { display: none; }
 .lede { font-size: 1.15rem; color: #d9dcec; max-width: 34ch; margin-bottom: 2rem; }
 .hero-photo { border: 1px solid rgba(195,156,91,.55); padding: 12px; }
@@ -372,7 +367,7 @@ a { color: var(--navy); }
   .confirm-list { grid-template-columns: 1fr; gap: 0 0; }
   .confirm-list dd { margin-bottom: .6rem; }
   .nav { gap: 1rem; }
-  .hero-logo { width: 170px; height: 170px; }
+  .hero-logo { width: 200px; }
   .hero-photo { padding: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
