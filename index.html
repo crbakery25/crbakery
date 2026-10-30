@@ -10,13 +10,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=23">
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
-  <header class="site-header">
+  <header class="site-header site-header--home">
     <div class="wrap">
-      <a class="brand" href="index.html" aria-label="CR Bakery home"><img src="images/logo.png" alt="CR Bakery, freshly baked happiness" width="64" height="64"></a>
       <nav class="nav" aria-label="Main">
         <a href="menu.html">Menu</a>
         <a href="about.html">About</a>
@@ -27,11 +26,16 @@
   <div class="notice" data-closure-notice hidden><div class="wrap"></div></div>
 
   <main id="main">
-    <section class="hero">
+    <section class="hero hero--logo">
       <div class="wrap">
         <div class="hero-copy">
-          <h1>Freshly baked happiness</h1>
-          <p class="lede">Handcrafted 9-inch cheesecakes from CR Bakery.</p>
+          <h1 class="hero-logo"><img src="images/logo.png" alt="CR Bakery, freshly baked happiness" width="600" height="600"></h1>
+          <p class="lede lede--tight">Baked goods &amp; sweet treats</p>
+          <ul class="specialties">
+            <li>Specialty Sweet Breads</li>
+            <li>Fruit Cheesecakes</li>
+            <li>Homemade Cookies</li>
+          </ul>
           <div class="actions">
             <a class="btn btn-gold" href="menu.html">See the menu</a>
             <a class="btn btn-line-light" href="contact.html#order">Place an order</a>
