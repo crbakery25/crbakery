@@ -208,17 +208,6 @@ a { color: var(--navy); }
 .menu-section + .menu-section {
   margin-top: clamp(3rem, 6vw, 4.5rem); padding-top: clamp(3rem, 6vw, 4.5rem); border-top: 1px solid var(--line);
 }
-.section-note {
-  display: inline-block; margin: .6rem 0 0; padding: .3rem .7rem;
-  background: var(--mist); border-left: 3px solid var(--gold);
-  font-size: .9rem; color: var(--gold-ink); font-style: italic;
-}
-.menu-section--special h2::after {
-  content: "Limited time"; display: inline-block; vertical-align: middle;
-  margin-left: .75rem; padding: .2rem .6rem; border-radius: 999px;
-  background: var(--navy); color: #fff; font: 600 .65rem/1.4 var(--sans);
-  letter-spacing: .04em; text-transform: uppercase;
-}
 
 /* About */
 .about-grid {

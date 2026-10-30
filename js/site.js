@@ -100,24 +100,9 @@
     return section.items.map(cardHTML).join("");
   }
 
-  function todayISO() {
-    var d = new Date();
-    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-  }
-
-  /* Sections currently on offer: a limited-time section with an
-     availableUntil date in the past is dropped everywhere. */
-  function activeSections() {
-    var today = todayISO();
-    return MENU.sections.filter(function (s) {
-      return !s.availableUntil || s.availableUntil >= today;
-    });
-  }
-
   function findSection(id) {
-    var list = activeSections();
-    for (var i = 0; i < list.length; i++) {
-      if (list[i].id === id) return list[i];
+    for (var i = 0; i < MENU.sections.length; i++) {
+      if (MENU.sections[i].id === id) return MENU.sections[i];
     }
     return null;
   }
@@ -126,11 +111,10 @@
   function renderMenuPage() {
     var root = $("#menu-root");
     if (!root) return;
-    root.innerHTML = activeSections().map(function (s) {
-      return '<section class="menu-section' + (s.availableUntil ? " menu-section--special" : "") + '" id="' + esc(s.id) + '">' +
+    root.innerHTML = MENU.sections.map(function (s) {
+      return '<section class="menu-section" id="' + esc(s.id) + '">' +
         '<div class="section-head"><h2>' + esc(s.title) + "</h2>" +
-        (s.description ? "<p>" + esc(s.description) + "</p>" : "") +
-        (s.note ? '<p class="section-note">' + esc(s.note) + "</p>" : "") + "</div>" +
+        (s.description ? "<p>" + esc(s.description) + "</p>" : "") + "</div>" +
         '<div class="' + (s.layout === "rows" ? "rows" : "cards") + '">' + itemsHTML(s) + "</div></section>";
     }).join("");
   }
@@ -291,7 +275,7 @@
     var byId = {};
     var dv = delivery();
 
-    host.innerHTML = activeSections().map(function (s) {
+    host.innerHTML = MENU.sections.map(function (s) {
       return '<div class="order-group"><h3>' + esc(s.title) + "</h3>" + s.items.map(function (it) {
         byId[it.id] = it;
         return '<div class="order-row" data-id="' + esc(it.id) + '">' +

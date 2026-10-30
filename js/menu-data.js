@@ -5,26 +5,9 @@
    - description: optional, shown under the name on cards
    - image:       optional, e.g. "images/peach.jpg" (a placeholder shows until you add one)
    - alt:         optional short description of the photo, for screen readers
-   - paymentLink: optional, reserved for a Stripe Payment Link later
-
-   A section can also be a limited-time special. Add:
-   - availableUntil: "YYYY-MM-DD"  (the last day it is offered; the whole
-                     section disappears from the site by itself the day after)
-   - note:          optional line shown under the section heading
-   To end a special early, change the date or delete the whole section block. */
+   - paymentLink: optional, reserved for a Stripe Payment Link later */
 window.MENU = {
   sections: [
-    {
-      id: "seasonal",
-      title: "Seasonal special",
-      description: "Here for a limited time only.",
-      availableUntil: "2026-11-30",
-      note: "Available through November 30.",
-      layout: "cards",
-      items: [
-        { id: "pumpkin-cheesecake", name: "Pumpkin Cheesecake", price: 60, description: "", image: "images/pumpkin-cheesecake.jpg", alt: "Pumpkin cheesecake topped with a fan of glazed pumpkin", paymentLink: "" }
-      ]
-    },
     {
       id: "signature",
       title: "The signature rounds",
