@@ -143,8 +143,11 @@ a { color: var(--navy); }
 .hero h1::before {
   content: ""; display: block; width: 56px; height: 2px; background: var(--gold); margin-bottom: 1.5rem;
 }
-/* Home page hero: the logo is the main heading (transparent version, straight on the navy) */
-.hero h1.hero-logo { width: min(100%, 440px); margin: 0 0 1.25rem; line-height: 0; }
+/* Home page hero: the logo is the main heading, on a white square with gold trim */
+.hero h1.hero-logo {
+  width: min(100%, 440px); margin: 0 0 1.5rem; line-height: 0;
+  background: #fff; border: 3px solid var(--gold); padding: 14px;
+}
 .hero h1.hero-logo::before { display: none; }
 .hero-logo img { display: block; width: 100%; height: auto; }
 .lede { font-size: 1.15rem; color: #d9dcec; max-width: 34ch; margin-bottom: 2rem; }
