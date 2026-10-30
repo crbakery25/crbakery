@@ -157,6 +157,18 @@ a { color: var(--navy); }
   .hero--logo .hero-copy { padding-top: 13px; }
 }
 .lede { font-size: 1.15rem; color: #d9dcec; max-width: 34ch; margin-bottom: 2rem; }
+.lede--tight { margin-bottom: .6rem; font-size: 1.3rem; color: #fff; }
+/* What CR Bakery makes, listed under the home page line, separated by small gold dots */
+.specialties {
+  list-style: none; margin: 0 0 2rem; padding: 0;
+  display: flex; flex-wrap: wrap; gap: .35rem 0;
+  color: var(--gold); font-weight: 600; font-size: 1.02rem;
+}
+.specialties li { display: flex; align-items: center; }
+.specialties li + li::before {
+  content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--gold);
+  opacity: .7; margin: 0 .8rem;
+}
 .hero-photo { border: 1px solid rgba(195,156,91,.55); padding: 12px; }
 .hero-photo .ph, .hero-photo img { aspect-ratio: 1 / 1; }
 .hero-photo img { display: block; width: 100%; object-fit: cover; }
@@ -377,6 +389,11 @@ a { color: var(--navy); }
   .confirm-list dd { margin-bottom: .6rem; }
   .nav { gap: 1rem; }
   .hero h1.hero-logo { width: min(100%, 320px); margin-inline: auto; }
+  .specialties { flex-direction: column; gap: .4rem; }
+  .specialties li::before, .specialties li + li::before {
+    content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--gold);
+    opacity: .7; margin: 0 .7rem 0 0;
+  }
   .hero-photo { padding: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
