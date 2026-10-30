@@ -143,13 +143,19 @@ a { color: var(--navy); }
 .hero h1::before {
   content: ""; display: block; width: 56px; height: 2px; background: var(--gold); margin-bottom: 1.5rem;
 }
-/* Home page hero: the logo is the main heading, on a white square with gold trim */
+/* Home page hero: the logo is the main heading, on a white circle with gold trim */
 .hero h1.hero-logo {
-  width: min(100%, 440px); margin: 0 0 1.5rem; line-height: 0;
-  background: #fff; border: 3px solid var(--gold); padding: 14px;
+  width: min(100%, 440px); aspect-ratio: 1 / 1; margin: 0 0 1.5rem; line-height: 0;
+  background: #fff; border: 3px solid var(--gold); border-radius: 50%; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
 }
 .hero h1.hero-logo::before { display: none; }
-.hero-logo img { display: block; width: 100%; height: auto; }
+.hero-logo img { display: block; width: 86%; height: auto; }
+/* Line up the top of the logo with the top of the photo (inside its frame) */
+@media (min-width: 901px) {
+  .hero--logo .wrap { align-items: start; }
+  .hero--logo .hero-copy { padding-top: 13px; }
+}
 .lede { font-size: 1.15rem; color: #d9dcec; max-width: 34ch; margin-bottom: 2rem; }
 .hero-photo { border: 1px solid rgba(195,156,91,.55); padding: 12px; }
 .hero-photo .ph, .hero-photo img { aspect-ratio: 1 / 1; }
