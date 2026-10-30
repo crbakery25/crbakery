@@ -78,6 +78,14 @@ a { color: var(--navy); }
 .brand img { display: block; width: 64px; height: 64px; }
 
 .nav { display: flex; align-items: center; gap: 1.5rem; }
+
+/* Home page: bigger logo, centered, with the menu links centered below it */
+.site-header--home .wrap {
+  flex-direction: column; justify-content: center; gap: .35rem;
+  padding-block: .75rem .4rem;
+}
+.site-header--home .brand img { width: 120px; height: 120px; }
+.site-header--home .nav { justify-content: center; }
 .nav a:not(.btn) {
   color: var(--navy); text-decoration: none; font-weight: 500;
   padding: .35rem 0; border-bottom: 2px solid transparent;
@@ -360,6 +368,7 @@ a { color: var(--navy); }
   .confirm-list { grid-template-columns: 1fr; gap: 0 0; }
   .confirm-list dd { margin-bottom: .6rem; }
   .nav { gap: 1rem; }
+  .site-header--home .brand img { width: 92px; height: 92px; }
   .hero-photo { padding: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
