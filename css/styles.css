@@ -79,13 +79,8 @@ a { color: var(--navy); }
 
 .nav { display: flex; align-items: center; gap: 1.5rem; }
 
-/* Home page: bigger logo, centered, with the menu links centered below it */
-.site-header--home .wrap {
-  flex-direction: column; justify-content: center; gap: .35rem;
-  padding-block: .75rem .4rem;
-}
-.site-header--home .brand img { width: 120px; height: 120px; }
-.site-header--home .nav { justify-content: center; }
+/* Home page: the logo lives in the hero instead, so the header holds just the links */
+.site-header--home .wrap { justify-content: center; }
 .nav a:not(.btn) {
   color: var(--navy); text-decoration: none; font-weight: 500;
   padding: .35rem 0; border-bottom: 2px solid transparent;
@@ -148,6 +143,13 @@ a { color: var(--navy); }
 .hero h1::before {
   content: ""; display: block; width: 56px; height: 2px; background: var(--gold); margin-bottom: 1.5rem;
 }
+/* Big logo at the top of the home page hero (the round badge, clipped to its circle) */
+.hero-logo { width: 220px; height: 220px; margin-bottom: 2rem; }
+.hero-logo img {
+  display: block; width: 100%; height: 100%; border-radius: 50%;
+  box-shadow: 0 0 0 6px rgba(195,156,91,.25);
+}
+.hero-logo + h1::before { display: none; }
 .lede { font-size: 1.15rem; color: #d9dcec; max-width: 34ch; margin-bottom: 2rem; }
 .hero-photo { border: 1px solid rgba(195,156,91,.55); padding: 12px; }
 .hero-photo .ph, .hero-photo img { aspect-ratio: 1 / 1; }
@@ -368,7 +370,7 @@ a { color: var(--navy); }
   .confirm-list { grid-template-columns: 1fr; gap: 0 0; }
   .confirm-list dd { margin-bottom: .6rem; }
   .nav { gap: 1rem; }
-  .site-header--home .brand img { width: 92px; height: 92px; }
+  .hero-logo { width: 170px; height: 170px; }
   .hero-photo { padding: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
