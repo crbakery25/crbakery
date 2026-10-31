@@ -74,6 +74,34 @@ window.MENU = {
         { id: "classic-blueberry-triple-berry",   name: "Classic Blueberry & Triple Berry",   price: 40, image: "images/classic-blueberry-triple-berry.jpg", alt: "Half blueberry, half triple berry cheesecake", paymentLink: "" },
         { id: "classic-blueberry-lemon",          name: "Classic Blueberry & Lemon",          price: 40, image: "images/classic-blueberry-lemon.jpg", alt: "Half blueberry, half lemon cheesecake", paymentLink: "" }
       ]
+    },
+    {
+      id: "cookies",
+      title: "Cookies",
+      description: "Baked fresh, by the half dozen or dozen.",
+      layout: "cards",
+      items: [   // add a photo by setting image: "images/your-photo.jpg" (or images: [...] for several)
+        { id: "classic-chocolate-chip", name: "Classic Chocolate Chip Cookies", description: "", image: "", alt: "", paymentLink: "",
+          sizes: [
+            { id: "classic-chocolate-chip-6",  label: "Half dozen", price: 10 },
+            { id: "classic-chocolate-chip-12", label: "Dozen",      price: 15 }
+          ] },
+        { id: "banana-chocolate-chip", name: "Banana Chocolate Chip Cookies", description: "", image: "", alt: "", paymentLink: "",
+          sizes: [
+            { id: "banana-chocolate-chip-6",  label: "Half dozen", price: 12 },
+            { id: "banana-chocolate-chip-12", label: "Dozen",      price: 18 }
+          ] },
+        { id: "mm-cookies", name: "M&M Cookies", description: "", image: "", alt: "", paymentLink: "",
+          sizes: [
+            { id: "mm-cookies-6",  label: "Half dozen", price: 12 },
+            { id: "mm-cookies-12", label: "Dozen",      price: 18 }
+          ] },
+        { id: "mexican-wedding", name: "Mexican Wedding Cookies", description: "", image: "", alt: "", paymentLink: "",
+          sizes: [
+            { id: "mexican-wedding-6",  label: "Half dozen", price: 10 },
+            { id: "mexican-wedding-12", label: "Dozen",      price: 15 }
+          ] }
+      ]
     }
   ]
 };
