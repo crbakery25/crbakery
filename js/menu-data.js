@@ -39,7 +39,7 @@ window.MENU = {
             { id: "pumpkin-cookies-6",  label: "Half dozen", price: 10 },
             { id: "pumpkin-cookies-12", label: "Dozen",      price: 18 }
           ] },
-        { id: "pumpkin-bread", name: "Pumpkin Bread", price: 18, description: "",
+        { id: "pumpkin-bread", name: "Pumpkin Bread", price: 18, description: "Made with our homemade pumpkin pur\u00e9e and warm fall spices, then baked to a beautiful golden-brown finish. This moist, tender loaf has a soft crumb, rich pumpkin flavor, and just the right amount of sweetness. Fall in every slice.",
           images: [
             { src: "images/pumpkin-bread.jpg",        alt: "A whole loaf of pumpkin bread on a wooden board" },
             { src: "images/pumpkin-bread-sliced.jpg", alt: "Pumpkin bread cut open to show the soft inside" }
