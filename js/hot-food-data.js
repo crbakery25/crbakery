@@ -15,6 +15,13 @@ window.HOT_FOOD = {
   pickupStart: "10:00",
   pickupEnd: "17:00",
   daysAhead: 31,
+  boxLimit: 30,          // most boxes per pickup day (each half dozen or dozen = 1 box). The booking
+                         // service enforces this too - keep HOT_BOX_LIMIT in worker/index.js the same.
+  /* Holidays: extra pickup days with their own hours and order deadline.
+     orderBy is the last moment to order (date and 24-hour time, Pacific). */
+  holidays: [
+    { date: "2026-11-26", name: "Thanksgiving", pickupStart: "09:00", pickupEnd: "16:00", orderBy: "2026-11-25 17:00" }
+  ],
   items: [
     { id: "tamales", name: "Tamales", orderPage: "hot-food.html",
       description: "Choose pork, chicken, or cheese with peppers - or mix and match fillings in one box.",

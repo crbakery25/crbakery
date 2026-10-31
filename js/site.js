@@ -429,9 +429,30 @@
       var back = (dow - orderDay + 7) % 7 || 7;
       var cutoff = addDaysISO(iso, -back);
       if (nowKey >= cutoff + " " + HF.orderByTime || closedRangeFor(iso)) continue;
-      out.push({ iso: iso, cutoff: cutoff });
+      out.push({ iso: iso, cutoff: cutoff, cutoffTime: HF.orderByTime, start: HF.pickupStart, end: HF.pickupEnd });
     }
-    return out;
+    /* Holidays: their own pickup hours and order deadline */
+    (HF.holidays || []).forEach(function (h) {
+      var by = h.orderBy || (addDaysISO(h.date, -1) + " " + HF.orderByTime);
+      if (h.date < now.date || h.date > addDaysISO(now.date, ahead) || nowKey >= by || closedRangeFor(h.date)) return;
+      out = out.filter(function (d) { return d.iso !== h.date; });
+      out.push({ iso: h.date, cutoff: by.slice(0, 10), cutoffTime: by.slice(11, 16), start: h.pickupStart || HF.pickupStart,
+        end: h.pickupEnd || HF.pickupEnd, holiday: h.name });
+    });
+    return out.sort(function (a, b) { return a.iso < b.iso ? -1 : 1; });
+  }
+
+  /* Upcoming holiday notes, e.g. "Thanksgiving: pickup Thu, Nov 26, 9:00 AM to 4:00 PM. Order by Wed, Nov 25, 5:00 PM." */
+  function hotHolidayNotes(HF) {
+    var now = bakeryNow(), nowKey = now.date + " " + now.time;
+    return (HF.holidays || []).filter(function (h) {
+      var by = h.orderBy || (addDaysISO(h.date, -1) + " " + HF.orderByTime);
+      return nowKey < by;
+    }).map(function (h) {
+      var by = h.orderBy || (addDaysISO(h.date, -1) + " " + HF.orderByTime);
+      return h.name + ": pickup " + shortDate(fromISO(h.date), true) + ", " + clockLabel(h.pickupStart || HF.pickupStart) + " to " +
+        clockLabel(h.pickupEnd || HF.pickupEnd) + ". Order by " + shortDate(fromISO(by.slice(0, 10)), true) + ", " + clockLabel(by.slice(11, 16)) + ".";
+    });
   }
 
   function initHotFood() {
@@ -443,6 +464,11 @@
     });
     $all("[data-hot-pickup-hours]").forEach(function (el) { el.textContent = clockLabel(HF.pickupStart) + " and " + clockLabel(HF.pickupEnd); });
     $all("[data-hot-cards]").forEach(function (el) { el.innerHTML = HF.items.map(cardHTML).join(""); });
+    $all("[data-hot-holidays]").forEach(function (el) {
+      var notes = hotHolidayNotes(HF);
+      el.hidden = !notes.length;
+      el.innerHTML = notes.map(function (n) { return "<p>" + esc(n) + "</p>"; }).join("");
+    });
 
     var form = $("#hot-order");
     if (!form) return;
@@ -571,7 +597,17 @@
         return '<div class="breakdown-row"><span>' + l.qty + "&nbsp;&times;&nbsp;" + esc(l.item.name) + "</span><span>" + money(l.qty * l.item.price) + "</span></div>";
       }).join("");
       totalEl.textContent = money(total());
+      var boxEl = $("#hot-boxes", form);
+      if (boxEl) {
+        var n = boxCount(), l = left[dateSel.value];
+        boxEl.hidden = !n;
+        boxEl.className = "box-count" + (typeof l === "number" && n > l ? " is-over" : "");
+        boxEl.textContent = "This preorder uses " + n + " box" + (n === 1 ? "" : "es") + " (each half dozen or dozen is one box)." +
+          (typeof l === "number" && dateSel.value ? " " + l + " of " + LIMIT + " left for that day." : "") +
+          (typeof l === "number" && n > l ? " Please remove some or choose another date." : "");
+      }
     }
+    function boxCount() { return lines().reduce(function (s, l) { return s + l.qty; }, 0); }
     host.addEventListener("click", function (e) {
       var b = e.target.closest("[data-step]");
       if (!b || !b.closest(".order-row")) return;
@@ -583,24 +619,55 @@
 
     /* Pickup dates (open weekends only) and times (several orders can share a time) */
     var dates = hotPickupDates(HF);
-    dateSel.innerHTML = '<option value="">Choose a date</option>' + dates.map(function (d) {
-      return '<option value="' + d.iso + '">' + esc(shortDate(fromISO(d.iso), true)) + "</option>";
-    }).join("");
+    var LIMIT = HF.boxLimit || 30;
+    var left = {};   // boxes still available per date, from the booking service (empty if it can't be reached)
+    function dateLabel(d) {
+      var n = left[d.iso];
+      return shortDate(fromISO(d.iso), true) + (d.holiday ? " - " + d.holiday : "") +
+        (n === 0 ? " (sold out)" : typeof n === "number" && n <= 10 ? " (" + n + " box" + (n === 1 ? "" : "es") + " left)" : "");
+    }
+    function drawDates() {
+      var keep = dateSel.value;
+      dateSel.innerHTML = '<option value="">Choose a date</option>' + dates.map(function (d) {
+        return '<option value="' + d.iso + '"' + (left[d.iso] === 0 ? " disabled" : "") + (d.iso === keep && left[d.iso] !== 0 ? " selected" : "") + ">" +
+          esc(dateLabel(d)) + "</option>";
+      }).join("");
+    }
+    function loadLeft() {
+      if (!SITE.bookingApi || !dates.length) return Promise.resolve();
+      return fetch(SITE.bookingApi + "/hot-capacity?dates=" + dates.map(function (d) { return d.iso; }).join(","), { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error("no capacity"); return r.json(); })
+        .then(function (d) { left = d.left || {}; drawDates(); refresh(); })
+        .catch(function () {});
+    }
+    drawDates();
+    loadLeft();
     var dateHint = $("#h-date-hint", form);
     if (dateHint) {
       dateHint.textContent = dates.length
         ? "Order by " + hotCutoffText(HF) + " for that weekend. Next pickups: " + shortDate(fromISO(dates[0].iso), true) +
           (dates[1] && dates[1].cutoff === dates[0].cutoff ? " and " + shortDate(fromISO(dates[1].iso), true) : "") +
-          " (order by " + shortDate(fromISO(dates[0].cutoff), true) + ", " + clockLabel(HF.orderByTime) + ")."
+          " (order by " + shortDate(fromISO(dates[0].cutoff), true) + ", " + clockLabel(dates[0].cutoffTime || HF.orderByTime) + ")." +
+          " Up to " + (HF.boxLimit || 30) + " boxes per pickup day."
         : "Preorders aren't open right now. Please check back soon.";
     }
+    /* Pickup times follow the chosen date (holidays can have their own hours) */
     var toMin = function (s) { return Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5)); };
-    var opts = '<option value="">Choose a time</option>';
-    for (var m = toMin(HF.pickupStart); m <= toMin(HF.pickupEnd); m += 30) {
-      var key = String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
-      opts += '<option value="' + clockLabel(key) + '">' + clockLabel(key) + "</option>";
+    var hoursHint = $("[data-hot-pickup-hours]", form);
+    function drawTimes() {
+      var d = dates.filter(function (x) { return x.iso === dateSel.value; })[0];
+      var start = d ? d.start : HF.pickupStart, end = d ? d.end : HF.pickupEnd, keep = timeSel.value;
+      var opts = '<option value="">Choose a time</option>';
+      for (var m = toMin(start); m <= toMin(end); m += 30) {
+        var key = String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+        opts += '<option value="' + clockLabel(key) + '"' + (clockLabel(key) === keep ? " selected" : "") + ">" + clockLabel(key) + "</option>";
+      }
+      timeSel.innerHTML = opts;
+      if (hoursHint) hoursHint.textContent = clockLabel(start) + " and " + clockLabel(end);
+      refresh();
     }
-    timeSel.innerHTML = opts;
+    dateSel.addEventListener("change", drawTimes);
+    drawTimes();
 
     var add = new URLSearchParams(window.location.search).get("add");
     if (add) {
@@ -625,7 +692,13 @@
       if (!ls.length) { say("Add at least one item to send your preorder.", "error"); host.scrollIntoView({ block: "center" }); return; }
       /* The weekend may have closed while the page was open */
       var still = hotPickupDates(HF).some(function (d) { return d.iso === dateSel.value; });
-      if (!still) { say("Orders for that weekend just closed. Please choose another date.", "error"); return; }
+      if (!still) { say("Orders for that date just closed. Please choose another date.", "error"); return; }
+      var boxes = boxCount(), have = left[dateSel.value];
+      if (typeof have === "number" && boxes > have) {
+        say(have ? "Only " + have + " box" + (have === 1 ? "" : "es") + " left for that day. Please remove some or choose another date." : "That day is sold out. Please choose another date.", "error");
+        return;
+      }
+      var chosenDay = dates.filter(function (d) { return d.iso === dateSel.value; })[0] || {};
       var fd = new FormData(form);
       var name = (fd.get("first_name") + " " + fd.get("last_name")).trim();
       var text = ls.map(function (l) { return l.qty + " x " + l.item.name + " (" + money(l.item.price) + " each)"; }).join("\n");
@@ -639,21 +712,50 @@
         _subject: "New CR Bakery weekend hot food preorder from " + name,
         order_type: "Weekend hot food preorder - pickup only, confirm once Venmo payment is received",
         name: name, email: record.email, phone: record.phone, pickup_date: record.date, pickup_time: record.time,
-        order: text, total: record.total, payment: record.payment, notes: record.notes
+        order: text, boxes: boxes, total: record.total, payment: record.payment, notes: record.notes
       };
+      if (chosenDay.holiday) payload.holiday = chosenDay.holiday;
       if (TEST_MODE || !SITE.formEndpoint) {
         if (TEST_MODE && saveConfirmation(record)) { window.location.href = "order-confirmed.html?sent=" + record.sentAt; return; }
         say(TEST_MODE ? "Test version: your preorder was not sent." : "Online preorders aren't open yet.", TEST_MODE ? "ok" : "error");
         return;
       }
-      say("Sending your preorder...", "");
-      fetch(SITE.formEndpoint, {
-        method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(payload)
+      function finishBoxes(hold) {
+        if (!hold || !SITE.bookingApi) return;
+        fetch(SITE.bookingApi + "/hot-finalize", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: hold.token }), keepalive: true }).catch(function () {});
+      }
+      function send(hold) {
+        say("Sending your preorder...", "");
+        fetch(SITE.formEndpoint, {
+          method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(payload)
+        }).then(function (res) {
+          if (!res.ok) throw new Error("bad response");
+          finishBoxes(hold);
+          if (saveConfirmation(record)) { window.location.href = "order-confirmed.html?sent=" + record.sentAt; return; }
+          say("Thanks, " + name + ". Your preorder was sent. Pay with Venmo to confirm it.", "ok");
+        }).catch(function () { finishBoxes(hold); postPlain(SITE.formEndpoint, payload); });
+      }
+      if (!SITE.bookingApi) { send(null); return; }
+      /* Hold the boxes first so the day can't go over its limit */
+      say("Checking availability...", "");
+      fetch(SITE.bookingApi + "/hot-reserve", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: record.date, boxes: boxes, name: name })
       }).then(function (res) {
-        if (!res.ok) throw new Error("bad response");
-        if (saveConfirmation(record)) { window.location.href = "order-confirmed.html?sent=" + record.sentAt; return; }
-        say("Thanks, " + name + ". Your preorder was sent. Pay with Venmo to confirm it.", "ok");
-      }).catch(function () { postPlain(SITE.formEndpoint, payload); });
+        return res.json().catch(function () { return {}; }).then(function (body) { return { status: res.status, body: body }; });
+      }).then(function (r) {
+        if (r.status === 200 && r.body.token) { send(r.body); return; }
+        if (r.status === 409) {
+          var l = typeof r.body.left === "number" ? r.body.left : 0;
+          left[record.date] = l; drawDates(); refresh();
+          say(l ? "Sorry, only " + l + " box" + (l === 1 ? " is" : "es are") + " left for that day. Please remove some or choose another date." : "Sorry, that day just sold out. Please choose another date.", "error");
+          return;
+        }
+        if (r.status === 429) { say("Too many attempts. Please try again in a little while.", "error"); return; }
+        if (r.status === 404) { send(null); return; }   // booking service not updated yet: send without the box limit
+        say("We couldn't check availability. Please try again.", "error");
+      }).catch(function () { say("We couldn't check availability. Please check your connection and try again.", "error"); });
     });
     refresh();
   }

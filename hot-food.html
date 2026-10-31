@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap">
-  <link rel="stylesheet" href="css/styles.css?v=31">
+  <link rel="stylesheet" href="css/styles.css?v=32">
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -33,6 +33,8 @@
         <h1>Weekend Hot Food</h1>
         <p>Preorder by <strong data-hot-cutoff>Thursday 5:00 PM</strong> for pickup on <span data-hot-pickup>Saturday or Sunday, 10:00 AM to 5:00 PM</span>. Pickup only. Prepayment with Venmo is required to confirm your order.</p>
       </div>
+
+      <div class="holiday-note" data-hot-holidays hidden></div>
 
       <div class="cards hot-cards" data-hot-cards></div>
 
@@ -99,6 +101,7 @@
           <h2 class="breakdown-head">Preorder details</h2>
           <div class="order-breakdown" id="hot-breakdown" hidden></div>
           <div class="order-total"><span>Total to prepay</span><span id="hot-total">$0</span></div>
+          <p class="box-count" id="hot-boxes" hidden></p>
 
           <button class="btn btn-solid" type="submit">Send preorder</button>
           <p class="form-status" id="hot-status" role="status" aria-live="polite"></p>
@@ -108,7 +111,7 @@
           <h2 id="pay-title">How it works</h2>
           <ol class="hot-steps">
             <li>Choose your tamales and a weekend pickup time.</li>
-            <li>Send your preorder by <span data-hot-cutoff>Thursday 5:00 PM</span>.</li>
+            <li>Send your preorder by <span data-hot-cutoff>Thursday 5:00 PM</span> (holidays have their own deadline).</li>
             <li>Pay with Venmo. Add your name and pickup date to the payment note.</li>
             <li>Pick up your order. No delivery for hot food.</li>
           </ol>
@@ -155,7 +158,7 @@
   <script>
     /* Script version: bump this number (in all six pages) whenever a js file changes, so visitors pick up the new file on their next visit. */
     (function () {
-      var v = 55;
+      var v = 56;
       ["site-config", "menu-data", "hot-food-data", "site"].forEach(function (n) {
         document.write('<script src="js/' + n + '.js?v=' + v + '"><\/script>');
       });

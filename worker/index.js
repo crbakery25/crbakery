@@ -7,7 +7,8 @@
      PICKUP_LAT       secret: pickup latitude (a plain number, e.g. 38.xxxxx) - never logged or returned
      PICKUP_LNG       secret: pickup longitude (a plain number, e.g. -121.xxxxx) - never logged or returned
      ORS_API_KEY      secret: free API key from openrouteservice.org, used to look up driving distance
-   The site calls /slots, /reserve, /finalize and /delivery-quote. Booked times are freed from /admin.
+   The site calls /slots, /reserve, /finalize, /delivery-quote, and for weekend hot food
+   /hot-capacity, /hot-reserve and /hot-finalize (at most HOT_BOX_LIMIT boxes per pickup day). Booked times are freed from /admin.
    /delivery-quote never receives, stores or returns the pickup address or coordinates - only the
    resulting miles and fee. See README.md for setup, including how to find your own coordinates
    without sharing them with anyone. */
@@ -23,6 +24,9 @@ const MAX_DELIVERY_MILES = 20; // addresses farther than this by driving distanc
    with deliveryBlock in js/site-config.js, which only decides what the order form shows. */
 const DELIVERY_BEFORE_MIN = 60;
 const DELIVERY_AFTER_MIN = 60;
+/* Weekend hot food (tamales): at most this many boxes per pickup day. Each half dozen or dozen
+   is one box. The count lives in its own table, hot_boxes, which this service creates by itself. */
+const HOT_BOX_LIMIT = 30;
 
 export default {
   async fetch(request, env) {
@@ -35,6 +39,9 @@ export default {
       if (request.method === "POST" && path === "/reserve") return await reserve(request, env, cors, url);
       if (request.method === "POST" && path === "/finalize") return await finalize(request, env, cors);
       if (request.method === "GET" && path === "/delivery-quote") return await deliveryQuote(url, env, cors);
+      if (request.method === "GET" && path === "/hot-capacity") return await hotCapacity(url, env, cors);
+      if (request.method === "POST" && path === "/hot-reserve") return await hotReserve(request, env, cors);
+      if (request.method === "POST" && path === "/hot-finalize") return await hotFinalize(request, env, cors);
       if (path === "/release") return await release(request, env, url);
       if (path === "/admin") return await admin(request, env, url);
       return json({ error: "Not found" }, 404, cors);
@@ -153,6 +160,82 @@ async function deliveryQuote(url, env, cors) {
   }
 }
 
+/* ---------- Weekend hot food: boxes per pickup day ---------- */
+
+/* One row per box. A box takes the lowest free number from 1 to HOT_BOX_LIMIT for its date, and
+   UNIQUE (date, slot) makes it impossible for two orders to take the same number, so the limit
+   holds even when two customers order at the same moment. */
+async function hotTable(env) {
+  await env.DB.prepare(
+    "CREATE TABLE IF NOT EXISTS hot_boxes (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, slot INTEGER NOT NULL, " +
+    "name TEXT, token TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'hold', ip TEXT, created_at INTEGER NOT NULL, expires_at INTEGER, UNIQUE (date, slot))"
+  ).run();
+  const now = Date.now();
+  const cutoff = new Date(now - 24 * 3600 * 1000).toISOString().slice(0, 10);
+  await env.DB.prepare("DELETE FROM hot_boxes WHERE (status = 'hold' AND expires_at < ?) OR date < ?").bind(now, cutoff).run();
+}
+
+async function hotCapacity(url, env, cors) {
+  const dates = (url.searchParams.get("dates") || "").split(",").filter(validDate).slice(0, 40);
+  if (!dates.length) return json({ error: "Bad dates" }, 400, cors);
+  await hotTable(env);
+  const rows = await env.DB.prepare(
+    "SELECT date, COUNT(*) AS n FROM hot_boxes WHERE date IN (" + dates.map(() => "?").join(",") + ") GROUP BY date"
+  ).bind(...dates).all();
+  const used = {};
+  rows.results.forEach((r) => { used[r.date] = r.n; });
+  const left = {};
+  dates.forEach((d) => { left[d] = Math.max(0, HOT_BOX_LIMIT - (used[d] || 0)); });
+  return json({ limit: HOT_BOX_LIMIT, left: left }, 200, cors);
+}
+
+async function hotReserve(request, env, cors) {
+  const body = await readJson(request);
+  if (!body) return json({ error: "Bad request" }, 400, cors);
+  const date = String(body.date || "");
+  const boxes = Number(body.boxes);
+  const name = String(body.name || "").slice(0, 100);
+  if (!validDate(date) || !Number.isInteger(boxes) || boxes < 1 || boxes > HOT_BOX_LIMIT || !name) return json({ error: "Bad request" }, 400, cors);
+  const yesterday = new Date(Date.now() - 24 * 3600 * 1000).toISOString().slice(0, 10);
+  if (date < yesterday) return json({ error: "Date is in the past" }, 400, cors);
+  await hotTable(env);
+  const ip = request.headers.get("CF-Connecting-IP") || "";
+  const recent = await env.DB.prepare("SELECT COUNT(DISTINCT token) AS n FROM hot_boxes WHERE ip = ? AND created_at > ?")
+    .bind(ip, Date.now() - 3600 * 1000).first();
+  if (recent && recent.n >= MAX_PER_HOUR) return json({ error: "Too many requests" }, 429, cors);
+
+  const token = randomToken();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const taken = await env.DB.prepare("SELECT slot FROM hot_boxes WHERE date = ?").bind(date).all();
+    const used = new Set(taken.results.map((r) => r.slot));
+    const free = [];
+    for (let n = 1; n <= HOT_BOX_LIMIT && free.length < boxes; n++) if (!used.has(n)) free.push(n);
+    if (free.length < boxes) return json({ error: "Not enough boxes left", left: HOT_BOX_LIMIT - used.size }, 409, cors);
+    const now = Date.now();
+    try {
+      await env.DB.batch(free.map((n) => env.DB.prepare(
+        "INSERT INTO hot_boxes (date, slot, name, token, status, ip, created_at, expires_at) VALUES (?, ?, ?, ?, 'hold', ?, ?, ?)"
+      ).bind(date, n, name, token, ip, now, now + HOLD_MINUTES * 60000)));
+      return json({ ok: true, token: token }, 200, cors);
+    } catch (err) {
+      if (!String((err && err.message) || err).includes("UNIQUE")) throw err;
+      // Someone took one of those numbers a moment ago: look again
+    }
+  }
+  return json({ error: "Busy, please try again" }, 409, cors);
+}
+
+async function hotFinalize(request, env, cors) {
+  const body = await readJson(request);
+  const token = body ? String(body.token || "") : "";
+  if (!validToken(token)) return json({ error: "Bad request" }, 400, cors);
+  await hotTable(env);
+  const result = await env.DB.prepare(
+    "UPDATE hot_boxes SET status = 'booked', expires_at = NULL WHERE token = ? AND (status = 'booked' OR expires_at >= ?)"
+  ).bind(token, Date.now()).run();
+  return json({ ok: result.meta.changes > 0 }, 200, cors);
+}
+
 /* ---------- Owner pages (opened from the order email or /admin) ---------- */
 
 async function release(request, env, url) {
@@ -182,8 +265,13 @@ async function admin(request, env, url) {
   if (!env.ADMIN_KEY || key.length !== env.ADMIN_KEY.length || key !== env.ADMIN_KEY) {
     return page("Not allowed", "<p>Not allowed.</p>", 403);
   }
+  await hotTable(env);
   if (request.method === "POST") {
     const form = await request.formData();
+    if (form.get("hot")) {
+      const t = String(form.get("hot"));
+      if (validToken(t)) await env.DB.prepare("DELETE FROM hot_boxes WHERE token = ?").bind(t).run();
+    }
     const picked = await env.DB.prepare("SELECT token FROM bookings WHERE id = ?").bind(Number(form.get("id"))).first();
     if (picked) await deleteOrder(env, picked.token.split("-")[0]);
   }
@@ -208,8 +296,23 @@ async function admin(request, env, url) {
         '<form method="POST" action="' + esc(action) + '"><input type="hidden" name="id" value="' + r.id + '">' +
         "<button>Release</button></form></td></tr>").join("")
     : '<tr><td colspan="5">No booked times.</td></tr>';
+  const hot = await env.DB.prepare(
+    "SELECT date, name, token, MIN(status) AS status, COUNT(*) AS boxes FROM hot_boxes WHERE date >= ? GROUP BY token ORDER BY date, MIN(id)"
+  ).bind(today).all();
+  const perDay = {};
+  hot.results.forEach((r) => { perDay[r.date] = (perDay[r.date] || 0) + r.boxes; });
+  const hotList = hot.results.length
+    ? hot.results.map((r) =>
+        "<tr><td>" + esc(r.date) + "</td><td>" + esc(r.name) + "</td><td>" + r.boxes + "</td><td>" +
+        (r.status === "hold" ? "waiting" : "booked") + "</td><td>" +
+        '<form method="POST" action="' + esc(action) + '"><input type="hidden" name="hot" value="' + esc(r.token) + '">' +
+        "<button>Release</button></form></td></tr>").join("")
+    : '<tr><td colspan="5">No hot food orders.</td></tr>';
+  const hotTotals = Object.keys(perDay).map((d) => esc(d) + ": " + perDay[d] + " of " + HOT_BOX_LIMIT + " boxes").join("<br>");
   return page("Booked times",
-    "<table><tr><th>Date</th><th>Time</th><th>Name</th><th>Status</th><th></th></tr>" + list + "</table>");
+    "<table><tr><th>Date</th><th>Time</th><th>Name</th><th>Status</th><th></th></tr>" + list + "</table>" +
+    "<h2>Weekend hot food</h2>" + (hotTotals ? "<p>" + hotTotals + "</p>" : "") +
+    "<table><tr><th>Pickup date</th><th>Name</th><th>Boxes</th><th>Status</th><th></th></tr>" + hotList + "</table>");
 }
 
 /* ---------- Helpers ---------- */
