@@ -95,7 +95,7 @@ window.MENU = {
             { id: "banana-chocolate-chip-6",  label: "Half dozen", price: 12 },
             { id: "banana-chocolate-chip-12", label: "Dozen",      price: 18 }
           ] },
-        { id: "mm-cookies", name: "M&M Cookies", description: "", image: "", alt: "", paymentLink: "",
+        { id: "mm-cookies", name: "M&M Cookies", description: "Our classic M&M cookies are golden and crisp on the edges with a soft center, packed with colorful M&M's in every bite. Every cookie gets a pop of color and a little chocolatey crunch. A fun, nostalgic treat that's always a crowd-pleaser, especially with kids.", image: "", alt: "", paymentLink: "",
           sizes: [
             { id: "mm-cookies-6",  label: "Half dozen", price: 12 },
             { id: "mm-cookies-12", label: "Dozen",      price: 18 }
