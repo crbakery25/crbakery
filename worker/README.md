@@ -1,6 +1,10 @@
 # Booking service (Cloudflare Worker)
 
-Stops two orders from taking the same date and 15-minute time. No secrets are stored in these files.
+Stops two orders from taking the same date and 15-minute time. A delivery blocks the 2 hours
+around its time (1 hour before to 1 hour after, so a 2:00 PM delivery holds 1:00-3:00 PM), so no
+pickup or other delivery can be booked while you're out. To change the window, edit
+`DELIVERY_BEFORE_MIN` / `DELIVERY_AFTER_MIN` in `index.js` and `deliveryBlock` in
+`js/site-config.js` to match. No secrets are stored in these files.
 
 ## Set up (Cloudflare dashboard)
 
@@ -15,6 +19,7 @@ Stops two orders from taking the same date and 15-minute time. No secrets are st
 ## Using it
 
 - To free a booked time (for example, a canceled order), open the admin page below and click **Release** next to it.
+- A delivery shows as one line, e.g. "2:00 PM (delivery, holds 1:00 PM - 3:00 PM)". Releasing it frees the whole window.
 - `https://<worker address>/admin?key=YOUR_ADMIN_KEY` lists every booked time with a Release button.
 - Bookings for dates that have passed are removed automatically (the day after).
 - A time held by someone who never finishes ordering frees itself after 5 minutes.

@@ -8,6 +8,7 @@ window.SITE = {
   linktreeUrl: "https://linktr.ee/crbakery25",
   leadTimeHours: 48,                   // minimum notice before pickup; the order form only allows dates at least this far ahead
   delivery: { baseFee: 7, baseMiles: 5, perMileFee: 0.75 },   // $7.00 up to 5 miles, plus $0.75 for each additional mile (capped at 20 miles - see MAX_DELIVERY_MILES in worker/index.js)
+  deliveryBlock: { before: 60, after: 60 },   // minutes a delivery blocks around its time (a 2:00 PM delivery holds 1:00-3:00 PM); keep in step with worker/index.js
   deliveryZips: {                      // driving miles, one way, from the pickup spot to each ZIP code you deliver to
     "95624": 7.7                       // Elk Grove (e.g. Elk Grove Florin Rd) - under 10 mi, so $7.00 flat
   },
