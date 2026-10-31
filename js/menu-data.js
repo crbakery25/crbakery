@@ -119,6 +119,11 @@ window.MENU = {
           images: [
             { src: "images/banana-bread.jpg",        alt: "A golden loaf of banana bread on a wooden board" },
             { src: "images/banana-bread-sliced.jpg", alt: "Banana bread sliced to show the soft inside" }
+          ] },
+        { id: "bread-bundle", name: "Bread Bundle", price: 32, description: "One Banana Nut Loaf and one Banana Bread - both loaves together for $32 (save $4).", paymentLink: "",
+          images: [
+            { src: "images/bread-bundle.jpg",        alt: "A banana nut loaf and a banana bread side by side on a wooden board" },
+            { src: "images/bread-bundle-sliced.jpg", alt: "Both loaves sliced: banana nut on the left, banana bread on the right" }
           ] }
       ]
     }
