@@ -90,7 +90,7 @@ window.MENU = {
             { id: "classic-chocolate-chip-6",  label: "Half dozen", price: 10 },
             { id: "classic-chocolate-chip-12", label: "Dozen",      price: 15 }
           ] },
-        { id: "banana-chocolate-chip", name: "Banana Chocolate Chip Cookies", description: "", image: "", alt: "", paymentLink: "",
+        { id: "banana-chocolate-chip", name: "Banana Chocolate Chip Cookies", description: "Everything you love about our banana bread, in cookie form. These soft, fluffy cookies are moist and full of real banana flavor, with chocolate chips throughout. Like a warm slice of banana bread you can hold in one hand.", image: "", alt: "", paymentLink: "",
           sizes: [
             { id: "banana-chocolate-chip-6",  label: "Half dozen", price: 12 },
             { id: "banana-chocolate-chip-12", label: "Dozen",      price: 18 }
