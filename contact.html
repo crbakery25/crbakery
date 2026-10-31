@@ -82,7 +82,7 @@
                 <select id="f-time" name="time" required>
                   <option value="">Choose a time</option>
                 </select>
-                <p class="field-hint">Between 9:00 AM and 7:00 PM.</p>
+                <p class="field-hint">Between 10:00 AM and 7:00 PM, every 30 minutes.</p>
               </div>
             </div>
             <div id="address-fields" hidden>
@@ -174,7 +174,7 @@
   <script>
     /* Script version: bump this number (in all five pages) whenever a js file changes, so visitors pick up the new file on their next visit. */
     (function () {
-      var v = 16;
+      var v = 17;
       ["site-config", "menu-data", "site"].forEach(function (n) {
         document.write('<script src="js/' + n + '.js?v=' + v + '"><\/script>');
       });

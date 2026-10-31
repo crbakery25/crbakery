@@ -391,10 +391,10 @@
     var dateLabel = $("label[for=f-date]", form);
     var timeLabel = $("label[for=f-time]", form);
     var timeSelect = $("#f-time", form);
-    /* Times from 9:00 AM to 7:00 PM, every 30 minutes */
-    var STEP = 30;
+    /* Times from 10:00 AM to 7:00 PM (the last time offered), every 30 minutes */
+    var STEP = 30, OPEN = 10 * 60, CLOSE = 19 * 60;
     var timeSlots = [];
-    for (var m = 9 * 60; m <= 19 * 60; m += STEP) {
+    for (var m = OPEN; m <= CLOSE; m += STEP) {
       var h24 = Math.floor(m / 60), min = m % 60;
       timeSlots.push({
         key: String(h24).padStart(2, "0") + ":" + String(min).padStart(2, "0"),
@@ -428,8 +428,8 @@
        time is only offered when that whole window is free. The booking service makes the final check. */
     var block = SITE.deliveryBlock || { before: 60, after: 60 };
     function windowKeys(slotIndex) {
-      var m = 9 * 60 + slotIndex * STEP, keys = [];
-      for (var t = Math.max(m - block.before, 9 * 60); t < m + block.after && t <= 19 * 60; t += STEP) {
+      var m = OPEN + slotIndex * STEP, keys = [];
+      for (var t = Math.max(m - block.before, OPEN); t < m + block.after && t <= CLOSE; t += STEP) {
         keys.push(String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"));
       }
       return keys;

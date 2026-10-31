@@ -14,9 +14,9 @@
 
 const HOLD_MINUTES = 5; // a time held while an order is being sent frees itself after this long
 const MAX_PER_HOUR = 5;    // most times one visitor (IP address) can hold or book in an hour
-const OPEN_MIN = 9 * 60;   // 9:00 AM
-const CLOSE_MIN = 19 * 60; // 7:00 PM
-const SLOT_MIN = 30;       // pickup and delivery times are offered every 30 minutes (9:00, 9:30, 10:00, ...)
+const OPEN_MIN = 10 * 60;  // 10:00 AM, the first pickup or delivery time
+const CLOSE_MIN = 19 * 60; // 7:00 PM, the last pickup or delivery time
+const SLOT_MIN = 30;       // pickup and delivery times are offered every 30 minutes (10:00, 10:30, 11:00, ...)
 const MAX_DELIVERY_MILES = 20; // addresses farther than this by driving distance are declined for delivery
 /* A delivery blocks the time around it so no pickup or other delivery is booked while you're out.
    A 2:00 PM delivery with 60 / 60 holds 1:00 PM up to (not including) 3:00 PM. Keep these in step
