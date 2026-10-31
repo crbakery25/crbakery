@@ -93,17 +93,24 @@
       }).join("") + "</div></div>";
   }
 
+  /* Allergy warning (allergy: "...") shown on the card, in the pop-up and in the order form */
+  function allergyBadge(item) {
+    return item.allergy ? '<p class="allergy-badge"><span aria-hidden="true">\u26A0\uFE0E</span> ' + esc(item.allergyShort || "Allergy warning") + "</p>" : "";
+  }
+
   function cardHTML(item) {
     if (item.images && item.images.length > 1) {
       return '<div class="card" data-item="' + esc(item.id) + '">' + galleryHTML(item) +
         '<a class="card-body card-link" href="' + orderHref(item) + '"><h3>' + esc(item.name) + "</h3>" +
         (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
+        allergyBadge(item) +
         "</a></div>";
     }
     return '<a class="card" data-item="' + esc(item.id) + '" href="' + orderHref(item) + '">' +
       '<div class="card-photo">' + photo(item) + "</div>" +
       '<div class="card-body"><h3>' + esc(item.name) + "</h3>" +
       (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
+      allergyBadge(item) +
       (item.fillings ? '<p class="card-fillings">' + item.fillings.map(function (f) { return esc(f.name); }).join(" \u00B7 ") + "</p>" : "") +
       (item.mixAndMatch ? '<p class="card-fillings card-mix">Mix &amp; match fillings in any box</p>' : "") +
       "</div></a>";
@@ -224,6 +231,7 @@
       '<h2 id="pop-title">' + esc(item.name) + "</h2>" +
       (item.sizes ? sizesHTML(item) : '<p class="pop-price price">' + money(item.price) + "</p>") +
       (item.description ? '<p class="pop-desc">' + esc(item.description) + "</p>" : "") +
+      (item.allergy ? '<p class="allergy-note" role="note"><strong>Allergy warning:</strong> ' + esc(item.allergy) + "</p>" : "") +
       '<a class="btn btn-solid pop-order" href="' + orderHref(item) + '">' + (item.sizes ? "Choose a size and order" : "Add to order") + "</a>" +
       "</div>";
     document.documentElement.classList.add("pop-open");
@@ -680,7 +688,8 @@
       return '<div class="order-group"><h3>' + esc(s.title) + "</h3>" + rows.map(function (it) {
         byId[it.id] = it;
         return '<div class="order-row" data-id="' + esc(it.id) + '"' + (it.parent ? ' data-parent="' + esc(it.parent) + '"' : "") + ">" +
-          '<div class="order-name">' + esc(it.name) + '<span class="order-price">' + money(it.price) + "</span></div>" +
+          '<div class="order-name">' + esc(it.name) + '<span class="order-price">' + money(it.price) + "</span>" +
+          (it.allergy ? '<span class="order-allergy">\u26A0\uFE0E ' + esc(it.allergyShort || "Allergy warning") + "</span>" : "") + "</div>" +
           '<div class="stepper">' +
           '<button type="button" data-step="-1" aria-label="Remove one ' + esc(it.name) + '">\u2212</button>' +
           '<input type="number" min="0" max="20" value="0" inputmode="numeric" data-qty aria-label="Quantity of ' + esc(it.name) + '">' +

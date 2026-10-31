@@ -8,6 +8,8 @@
    - paymentLink: optional, reserved for a Stripe Payment Link later
    - images:      optional, for more than one photo: images: [{ src: "images/a.jpg", alt: "..." }, ...]
                   Customers can swipe through them (or use the arrows) on the menu.
+   - allergy:     optional allergy warning shown in the pop-up and order form, e.g. "Contains tree nuts (walnuts)."
+                  allergyShort is the short label on the menu card, e.g. "Contains nuts".
    - sizes:       optional, for an item sold in more than one size. Leave out price and list
                   each size instead: sizes: [{ id: "x-6", label: "Half dozen", price: 10 }, ...]
                   The menu shows one photo with every size and price; the order form gets a line per size.
@@ -111,6 +113,7 @@ window.MENU = {
       layout: "cards",
       items: [
         { id: "banana-nut-loaf", name: "Banana Nut Loaf", price: 20, description: "Banana bread packed with walnuts and topped with toasted walnuts.",
+          allergyShort: "Contains nuts", allergy: "Contains tree nuts (walnuts). Not suitable for anyone with a nut allergy.",
           paymentLink: "",
           images: [
             { src: "images/banana-nut-loaf.jpg",        alt: "A banana nut loaf topped with walnuts on a wooden board" },
@@ -121,7 +124,8 @@ window.MENU = {
             { src: "images/banana-bread.jpg",        alt: "A golden loaf of banana bread on a wooden board" },
             { src: "images/banana-bread-sliced.jpg", alt: "Banana bread sliced to show the soft inside" }
           ] },
-        { id: "bread-bundle", name: "Bread Bundle", price: 32, description: "One Banana Nut Loaf and one Banana Bread - both loaves together for $32 (save $4).", paymentLink: "",
+        { id: "bread-bundle", name: "Bread Bundle", price: 32, description: "One Banana Nut Loaf and one Banana Bread - both loaves together for $32 (save $4).",
+          allergyShort: "Contains nuts", allergy: "Contains tree nuts (walnuts) - the Banana Nut Loaf in this bundle is made with walnuts. Not suitable for anyone with a nut allergy.", paymentLink: "",
           images: [
             { src: "images/bread-bundle.jpg",        alt: "A banana nut loaf and a banana bread side by side on a wooden board" },
             { src: "images/bread-bundle-sliced.jpg", alt: "Both loaves sliced: banana nut on the left, banana bread on the right" }
