@@ -105,6 +105,7 @@
       '<div class="card-body"><h3>' + esc(item.name) + "</h3>" +
       (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
       (item.fillings ? '<p class="card-fillings">' + item.fillings.map(function (f) { return esc(f.name); }).join(" \u00B7 ") + "</p>" : "") +
+      (item.mixAndMatch ? '<p class="card-fillings card-mix">Mix &amp; match fillings in any box</p>' : "") +
       "</div></a>";
   }
 
@@ -460,13 +461,99 @@
           '<input type="number" min="0" max="20" value="0" inputmode="numeric" data-qty aria-label="Quantity of ' + esc(r.name) + '">' +
           '<button type="button" data-step="1" aria-label="Add one ' + esc(r.name) + '">+</button>' +
           "</div></div>";
-      }).join("") + "</div>";
+      }).join("") + (it.mixAndMatch && it.fillings && it.sizes ? mixHTML(it) : "") + "</div>";
     }).join("");
+
+    /* Mix & match: pick a box size, then how many of each filling; the box is added once it's full */
+    function mixHTML(it) {
+      return '<div class="mix" data-mix="' + esc(it.id) + '">' +
+        '<h4>Mix &amp; match a box</h4>' +
+        '<p class="mix-lede">Choose a box size, then how many of each filling.</p>' +
+        '<div class="choices mix-sizes">' + it.sizes.map(function (z, i) {
+          return '<label class="choice' + (i ? "" : " is-selected") + '"><input type="radio" name="mix-size-' + esc(it.id) + '" value="' + esc(z.id) + '"' +
+            (i ? "" : " checked") + "><span>" + esc(z.label) + " &middot; " + money(z.price) + "</span></label>";
+        }).join("") + "</div>" +
+        it.fillings.map(function (f) {
+          return '<div class="mix-row" data-fill="' + esc(f.id) + '"><span class="mix-name">' + esc(f.name) + "</span>" +
+            '<div class="stepper">' +
+            '<button type="button" data-mstep="-1" aria-label="One less ' + esc(f.name) + '">\u2212</button>' +
+            '<output class="mix-count" aria-live="polite">0</output>' +
+            '<button type="button" data-mstep="1" aria-label="One more ' + esc(f.name) + '">+</button>' +
+            "</div></div>";
+        }).join("") +
+        '<div class="mix-foot"><span class="mix-status" aria-live="polite"></span>' +
+        '<button type="button" class="btn btn-gold btn-sm mix-add" disabled>Add mixed box</button></div>' +
+        '<div class="mix-boxes"></div>' +
+        "</div>";
+    }
+    var mixedBoxes = [];   // { item, qty: 1 } for each finished mixed box
+    $all("[data-mix]", host).forEach(function (box) {
+      var it = HF.items.filter(function (x) { return x.id === box.getAttribute("data-mix"); })[0];
+      var counts = {};
+      function size() {
+        var v = ($('input[type=radio]:checked', box) || {}).value;
+        return it.sizes.filter(function (z) { return z.id === v; })[0] || it.sizes[0];
+      }
+      function need() { return parseInt(size().id, 10) || 0; }
+      function chosen() { return Object.keys(counts).reduce(function (s, k) { return s + counts[k]; }, 0); }
+      function draw() {
+        $all(".mix-sizes .choice", box).forEach(function (c) { c.classList.toggle("is-selected", $("input", c).checked); });
+        $all(".mix-row", box).forEach(function (r) {
+          var n = counts[r.getAttribute("data-fill")] || 0;
+          $(".mix-count", r).textContent = n;
+          r.classList.toggle("is-selected", n > 0);
+          $('[data-mstep="1"]', r).disabled = chosen() >= need();
+          $('[data-mstep="-1"]', r).disabled = n === 0;
+        });
+        var left = need() - chosen();
+        $(".mix-status", box).textContent = left > 0
+          ? chosen() + " of " + need() + " chosen - pick " + left + " more"
+          : "Box full: " + need() + " of " + need();
+        $(".mix-add", box).disabled = left !== 0;
+        $(".mix-boxes", box).innerHTML = mixedBoxes.filter(function (m) { return m.parent === it.id; }).map(function (m, i) {
+          return '<div class="mix-box"><span><strong>' + esc(m.label) + "</strong> " + money(m.item.price) + '<br><span class="mix-detail">' + esc(m.detail) + "</span></span>" +
+            '<button type="button" class="mix-remove" data-remove="' + mixedBoxes.indexOf(m) + '">Remove</button></div>';
+        }).join("");
+      }
+      box.addEventListener("change", function (e) {
+        if (e.target.type !== "radio") return;
+        /* Shrinking the box trims the last fillings picked so the count still fits */
+        var over = chosen() - need();
+        it.fillings.slice().reverse().forEach(function (f) {
+          while (over > 0 && counts[f.id] > 0) { counts[f.id]--; over--; }
+        });
+        draw();
+      });
+      box.addEventListener("click", function (e) {
+        var s = e.target.closest("[data-mstep]");
+        if (s) {
+          var id = s.closest(".mix-row").getAttribute("data-fill");
+          var step = parseInt(s.getAttribute("data-mstep"), 10);
+          if (step > 0 && chosen() >= need()) return;
+          counts[id] = Math.max(0, (counts[id] || 0) + step);
+          draw(); return;
+        }
+        if (e.target.closest(".mix-add")) {
+          if (chosen() !== need()) return;
+          var z = size();
+          var detail = it.fillings.filter(function (f) { return counts[f.id]; })
+            .map(function (f) { return counts[f.id] + " " + f.name; }).join(", ");
+          var label = "Mixed " + it.name + ", " + z.label;
+          mixedBoxes.push({ parent: it.id, label: label, detail: detail, item: { name: label + " (" + detail + ")", price: z.price }, qty: 1 });
+          counts = {};
+          draw(); refresh(); return;
+        }
+        var r = e.target.closest("[data-remove]");
+        if (r) { mixedBoxes.splice(Number(r.getAttribute("data-remove")), 1); draw(); refresh(); }
+      });
+      draw();
+    });
 
     function qty(row) { var n = parseInt($("[data-qty]", row).value, 10); return isNaN(n) || n < 0 ? 0 : Math.min(n, 20); }
     function lines() {
       return $all(".order-row", host).map(function (row) { return { item: byId[row.getAttribute("data-id")], qty: qty(row) }; })
-        .filter(function (l) { return l.qty > 0; });
+        .filter(function (l) { return l.qty > 0; })
+        .concat(mixedBoxes.map(function (m) { return { item: m.item, qty: 1 }; }));
     }
     function total() { return lines().reduce(function (s, l) { return s + l.qty * l.item.price; }, 0); }
     function refresh() {
@@ -480,7 +567,7 @@
     }
     host.addEventListener("click", function (e) {
       var b = e.target.closest("[data-step]");
-      if (!b) return;
+      if (!b || !b.closest(".order-row")) return;
       var row = b.closest(".order-row");
       $("[data-qty]", row).value = Math.max(0, Math.min(20, qty(row) + parseInt(b.getAttribute("data-step"), 10)));
       refresh();

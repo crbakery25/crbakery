@@ -17,7 +17,8 @@ window.HOT_FOOD = {
   weeksAhead: 2,
   items: [
     { id: "tamales", name: "Tamales", orderPage: "hot-food.html",
-      description: "Choose pork, chicken, or cheese with peppers.",
+      description: "Choose pork, chicken, or cheese with peppers - or mix and match fillings in one box.",
+      mixAndMatch: true,   // adds a "Mix & match a box" builder: customers split a half dozen or dozen across fillings
       image: "images/tamales.jpg", alt: "Pork, chicken, and cheese with pepper tamales cut open on a white plate",
       fillings: [
         { id: "pork",    name: "Pork" },
