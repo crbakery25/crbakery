@@ -68,7 +68,7 @@
   }
 
   function orderHref(item) {
-    return "contact.html?add=" + encodeURIComponent(item.id) + "#order";
+    return (item.orderPage || "contact.html") + "?add=" + encodeURIComponent(item.id) + "#order";
   }
 
   /* An item sold in several sizes (e.g. half dozen / dozen) lists each size and price under its photo */
@@ -104,6 +104,7 @@
       '<div class="card-photo">' + photo(item) + "</div>" +
       '<div class="card-body"><h3>' + esc(item.name) + "</h3>" +
       (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
+      (item.fillings ? '<p class="card-fillings">' + item.fillings.map(function (f) { return esc(f.name); }).join(" \u00B7 ") + "</p>" : "") +
       "</div></a>";
   }
 
@@ -191,7 +192,7 @@
      description and an "Add to order" button. Without JavaScript the links still go to the order form. */
   function findItem(id) {
     var found = null;
-    activeSections().forEach(function (s) {
+    activeSections().concat(window.HOT_FOOD ? [window.HOT_FOOD] : []).forEach(function (s) {
       s.items.forEach(function (it) { if (it.id === id) found = it; });
     });
     return found;
@@ -328,6 +329,7 @@
       return;
     }
 
+    if (o.prepay && lede) lede.textContent = "Your preorder was sent. Pay with Venmo to confirm it - details below.";
     var first = String(o.name || "").split(" ")[0];
     if (heading && first) heading.textContent = "Thank you, " + first;
     var isDelivery = o.fulfillment === "Delivery";
@@ -351,7 +353,12 @@
     if (o.notes) details.push(["Notes", o.notes]);
 
     var isCash = o.payment === "Cash";
-    var payHtml = isCash
+    var payHtml = o.prepay
+      ? "<p><strong>Prepayment is required.</strong> Your order is confirmed once CR Bakery receives your Venmo payment.</p>" +
+        "<p>Amount to pay: <strong>" + esc(o.total) + "</strong></p>" +
+        "<p>Add your name and pickup date to the payment note.</p>" +
+        '<a class="btn btn-solid" href="' + esc(SITE.venmoUrl || "#") + '" target="_blank" rel="noopener">Pay with Venmo</a>'
+      : isCash
       ? "<p>You chose to pay with cash. Please have it ready at " + word.toLowerCase() + ".</p>" +
         "<p>Estimated total: <strong>" + esc(o.total) + "</strong></p>"
       : "<p>You chose to pay with Venmo. Add your name to the payment note.</p>" +
@@ -367,8 +374,8 @@
         "<p>Order sent " + esc(sent.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })) + "</p></div>" +
       '<div class="confirm-grid">' +
         '<section class="confirm-card" aria-labelledby="c-order"><h2 id="c-order">Order details</h2>' + rows +
-          '<div class="order-total"><span>Estimated total</span><span>' + esc(o.total) + "</span></div>" +
-          '<p class="confirm-note">CR Bakery will confirm your order and final total.</p></section>' +
+          '<div class="order-total"><span>' + (o.prepay ? "Total to prepay" : "Estimated total") + '</span><span>' + esc(o.total) + "</span></div>" +
+          '<p class="confirm-note">' + (o.prepay ? "Your order is confirmed once your Venmo payment is received." : "CR Bakery will confirm your order and final total.") + "</p></section>" +
         '<section class="confirm-card" aria-labelledby="c-contact"><h2 id="c-contact">Your details</h2>' +
           '<dl class="confirm-list">' + list + "</dl></section>" +
         '<section class="confirm-card confirm-pay no-print" aria-labelledby="c-pay"><h2 id="c-pay">How to pay</h2>' +
@@ -380,6 +387,181 @@
 
     var printBtn = $("#confirm-print", root);
     if (printBtn) printBtn.addEventListener("click", function () { window.print(); });
+  }
+
+  /* ---------- Weekend hot food: preorder page, pickup only, prepay with Venmo ---------- */
+  var DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+  /* Today's date and time in the bakery's time zone, whatever the visitor's own clock is set to */
+  function bakeryNow() {
+    var p = {};
+    new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+    return { date: p.year + "-" + p.month + "-" + p.day, time: p.hour + ":" + p.minute };
+  }
+  function addDaysISO(iso, n) { var d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+  function weekdayOf(iso) { return new Date(iso + "T12:00:00Z").getUTCDay(); }
+  function clockLabel(hhmm) {
+    var h = Number(hhmm.slice(0, 2)), m = hhmm.slice(3, 5);
+    return ((h + 11) % 12 + 1) + ":" + m + (h < 12 ? " AM" : " PM");
+  }
+  function hotCutoffText(HF) { return HF.orderByDay + " " + clockLabel(HF.orderByTime); }
+
+  /* Pickup dates still open for preorders: each weekend closes at the order-by day and time before it */
+  function hotPickupDates(HF) {
+    var now = bakeryNow(), nowKey = now.date + " " + now.time;
+    var days = HF.pickupDays.map(function (d) { return DAY_NAMES.indexOf(d); });
+    var orderDay = DAY_NAMES.indexOf(HF.orderByDay);
+    var out = [], weekends = {};
+    for (var i = 0; i < 35 && Object.keys(weekends).length <= (HF.weeksAhead || 2); i++) {
+      var iso = addDaysISO(now.date, i), dow = weekdayOf(iso);
+      if (days.indexOf(dow) === -1) continue;
+      var back = (dow - orderDay + 7) % 7 || 7;
+      var cutoff = addDaysISO(iso, -back);
+      if (nowKey >= cutoff + " " + HF.orderByTime || closedRangeFor(iso)) continue;
+      weekends[cutoff] = true;
+      if (Object.keys(weekends).length > (HF.weeksAhead || 2)) break;
+      out.push({ iso: iso, cutoff: cutoff });
+    }
+    return out;
+  }
+
+  function initHotFood() {
+    var HF = window.HOT_FOOD;
+    if (!HF) return;
+    $all("[data-hot-cutoff]").forEach(function (el) { el.textContent = hotCutoffText(HF); });
+    $all("[data-hot-pickup]").forEach(function (el) {
+      el.textContent = HF.pickupDays.join(" or ") + ", " + clockLabel(HF.pickupStart) + " to " + clockLabel(HF.pickupEnd);
+    });
+    $all("[data-hot-pickup-hours]").forEach(function (el) { el.textContent = clockLabel(HF.pickupStart) + " and " + clockLabel(HF.pickupEnd); });
+    $all("[data-hot-cards]").forEach(function (el) { el.innerHTML = HF.items.map(cardHTML).join(""); });
+
+    var form = $("#hot-order");
+    if (!form) return;
+    var host = $("#hot-items", form), totalEl = $("#hot-total", form), statusEl = $("#hot-status", form);
+    var breakdownEl = $("#hot-breakdown", form), dateSel = $("#h-date", form), timeSel = $("#h-time", form);
+    var byId = {};
+
+    /* One order line per filling and size */
+    host.innerHTML = HF.items.map(function (it) {
+      var rows = [];
+      (it.fillings || [{ id: "", name: "" }]).forEach(function (f) {
+        (it.sizes || [{ id: "", label: "", price: it.price }]).forEach(function (z) {
+          var name = (f.name ? f.name + " " : "") + it.name + (z.label ? ", " + z.label : "");
+          rows.push({ id: [it.id, f.id, z.id].filter(Boolean).join("-"), name: name, price: z.price, parent: it.id });
+        });
+      });
+      return '<div class="order-group"><h3>' + esc(it.name) + "</h3>" + rows.map(function (r) {
+        byId[r.id] = r;
+        return '<div class="order-row" data-id="' + esc(r.id) + '" data-parent="' + esc(r.parent) + '">' +
+          '<div class="order-name">' + esc(r.name) + '<span class="order-price">' + money(r.price) + "</span></div>" +
+          '<div class="stepper">' +
+          '<button type="button" data-step="-1" aria-label="Remove one ' + esc(r.name) + '">\u2212</button>' +
+          '<input type="number" min="0" max="20" value="0" inputmode="numeric" data-qty aria-label="Quantity of ' + esc(r.name) + '">' +
+          '<button type="button" data-step="1" aria-label="Add one ' + esc(r.name) + '">+</button>' +
+          "</div></div>";
+      }).join("") + "</div>";
+    }).join("");
+
+    function qty(row) { var n = parseInt($("[data-qty]", row).value, 10); return isNaN(n) || n < 0 ? 0 : Math.min(n, 20); }
+    function lines() {
+      return $all(".order-row", host).map(function (row) { return { item: byId[row.getAttribute("data-id")], qty: qty(row) }; })
+        .filter(function (l) { return l.qty > 0; });
+    }
+    function total() { return lines().reduce(function (s, l) { return s + l.qty * l.item.price; }, 0); }
+    function refresh() {
+      $all(".order-row", host).forEach(function (row) { row.classList.toggle("is-selected", qty(row) > 0); });
+      var ls = lines();
+      breakdownEl.hidden = !ls.length;
+      breakdownEl.innerHTML = ls.map(function (l) {
+        return '<div class="breakdown-row"><span>' + l.qty + "&nbsp;&times;&nbsp;" + esc(l.item.name) + "</span><span>" + money(l.qty * l.item.price) + "</span></div>";
+      }).join("");
+      totalEl.textContent = money(total());
+    }
+    host.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-step]");
+      if (!b) return;
+      var row = b.closest(".order-row");
+      $("[data-qty]", row).value = Math.max(0, Math.min(20, qty(row) + parseInt(b.getAttribute("data-step"), 10)));
+      refresh();
+    });
+    host.addEventListener("input", refresh);
+
+    /* Pickup dates (open weekends only) and times (several orders can share a time) */
+    var dates = hotPickupDates(HF);
+    dateSel.innerHTML = '<option value="">Choose a date</option>' + dates.map(function (d) {
+      return '<option value="' + d.iso + '">' + esc(shortDate(fromISO(d.iso), true)) + "</option>";
+    }).join("");
+    var dateHint = $("#h-date-hint", form);
+    if (dateHint) {
+      dateHint.textContent = dates.length
+        ? "Order by " + hotCutoffText(HF) + " for that weekend. Next pickups: " + shortDate(fromISO(dates[0].iso), true) +
+          (dates[1] && dates[1].cutoff === dates[0].cutoff ? " and " + shortDate(fromISO(dates[1].iso), true) : "") +
+          " (order by " + shortDate(fromISO(dates[0].cutoff), true) + ", " + clockLabel(HF.orderByTime) + ")."
+        : "Preorders aren't open right now. Please check back soon.";
+    }
+    var toMin = function (s) { return Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5)); };
+    var opts = '<option value="">Choose a time</option>';
+    for (var m = toMin(HF.pickupStart); m <= toMin(HF.pickupEnd); m += 30) {
+      var key = String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+      opts += '<option value="' + clockLabel(key) + '">' + clockLabel(key) + "</option>";
+    }
+    timeSel.innerHTML = opts;
+
+    var add = new URLSearchParams(window.location.search).get("add");
+    if (add) {
+      var first = $('.order-row[data-parent="' + add + '"]', host);
+      $all('.order-row[data-parent="' + add + '"]', host).forEach(function (r) { r.classList.add("is-highlight"); });
+      if (first) setTimeout(function () { first.scrollIntoView({ block: "center" }); }, 50);
+    }
+
+    function say(msg, kind) { statusEl.textContent = msg; statusEl.className = "form-status" + (kind ? " is-" + kind : ""); }
+    function postPlain(url, fields) {
+      var f = document.createElement("form");
+      f.method = "POST"; f.action = url; f.style.display = "none";
+      Object.keys(fields).forEach(function (k) {
+        var i = document.createElement("input"); i.type = "hidden"; i.name = k; i.value = fields[k]; f.appendChild(i);
+      });
+      document.body.appendChild(f); f.submit();
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var ls = lines();
+      if (!ls.length) { say("Add at least one item to send your preorder.", "error"); host.scrollIntoView({ block: "center" }); return; }
+      /* The weekend may have closed while the page was open */
+      var still = hotPickupDates(HF).some(function (d) { return d.iso === dateSel.value; });
+      if (!still) { say("Orders for that weekend just closed. Please choose another date.", "error"); return; }
+      var fd = new FormData(form);
+      var name = (fd.get("first_name") + " " + fd.get("last_name")).trim();
+      var text = ls.map(function (l) { return l.qty + " x " + l.item.name + " (" + money(l.item.price) + " each)"; }).join("\n");
+      var record = {
+        name: name, phone: fd.get("phone"), email: fd.get("email") || "", fulfillment: "Pickup", prepay: true,
+        date: fd.get("date"), time: fd.get("time"), payment: "Venmo (prepayment required)", notes: fd.get("notes") || "",
+        items: ls.map(function (l) { return { name: l.item.name, qty: l.qty, price: l.item.price }; }),
+        fee: 0, total: money(total()), sentAt: Date.now()
+      };
+      var payload = {
+        _subject: "New CR Bakery weekend hot food preorder from " + name,
+        order_type: "Weekend hot food preorder - pickup only, confirm once Venmo payment is received",
+        name: name, email: record.email, phone: record.phone, pickup_date: record.date, pickup_time: record.time,
+        order: text, total: record.total, payment: record.payment, notes: record.notes
+      };
+      if (TEST_MODE || !SITE.formEndpoint) {
+        if (TEST_MODE && saveConfirmation(record)) { window.location.href = "order-confirmed.html?sent=" + record.sentAt; return; }
+        say(TEST_MODE ? "Test version: your preorder was not sent." : "Online preorders aren't open yet.", TEST_MODE ? "ok" : "error");
+        return;
+      }
+      say("Sending your preorder...", "");
+      fetch(SITE.formEndpoint, {
+        method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(payload)
+      }).then(function (res) {
+        if (!res.ok) throw new Error("bad response");
+        if (saveConfirmation(record)) { window.location.href = "order-confirmed.html?sent=" + record.sentAt; return; }
+        say("Thanks, " + name + ". Your preorder was sent. Pay with Venmo to confirm it.", "ok");
+      }).catch(function () { postPlain(SITE.formEndpoint, payload); });
+    });
+    refresh();
   }
 
   /* Order form */
@@ -856,6 +1038,7 @@
     renderCardBlocks();
     initGalleries(document);
     initItemPopups();
+    initHotFood();
     fillContactLinks();
     showClosureNotice();
     initOrderForm();

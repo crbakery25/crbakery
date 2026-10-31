@@ -74,7 +74,7 @@ a { color: var(--navy); }
   display: flex; align-items: center; justify-content: space-between;
   gap: 1rem; min-height: 76px;
 }
-.brand { display: block; line-height: 0; }
+.brand { display: block; line-height: 0; flex-shrink: 0; }
 .brand img { display: block; width: 64px; height: 64px; }
 
 .nav { display: flex; align-items: center; gap: 1.5rem; }
@@ -451,4 +451,20 @@ html.pop-open { overflow: hidden; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Weekend hot food */
+.card-fillings { flex-basis: 100%; margin: .3rem 0 0; color: var(--muted); font-size: .95rem; }
+.hot-cards { grid-template-columns: repeat(auto-fill, minmax(240px, 300px)); margin-bottom: 3rem; }
+.prepay-note { margin: 0; padding: .9rem 1rem; background: #f3ead6; border-left: 3px solid var(--gold); border-radius: var(--r); }
+.hot-steps { margin: 0 0 1.25rem; padding-left: 1.2rem; display: grid; gap: .45rem; }
+.hot-strip { background: #f3ead6; border-top: 3px solid var(--gold); }
+.hot-strip h2 { color: var(--navy); }
+.hot-strip p { color: var(--ink); }
+.hot-strip .eyebrow { color: var(--gold-ink); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: .85rem; margin-bottom: .4rem; }
+.nav a { white-space: nowrap; }
+@media (max-width: 420px) {
+  .nav { gap: .7rem; }
+  .nav .btn-sm { padding-inline: .8rem; }
+  .site-header .brand img { width: 52px; height: 52px; }
 }
