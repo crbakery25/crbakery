@@ -416,20 +416,19 @@
   }
   function hotCutoffText(HF) { return HF.orderByDay + " " + clockLabel(HF.orderByTime); }
 
-  /* Pickup dates still open for preorders: each weekend closes at the order-by day and time before it */
+  /* Pickup dates still open for preorders: every pickup day in the next daysAhead days whose
+     order-by cutoff (the order-by day and time before that weekend) hasn't passed yet */
   function hotPickupDates(HF) {
     var now = bakeryNow(), nowKey = now.date + " " + now.time;
     var days = HF.pickupDays.map(function (d) { return DAY_NAMES.indexOf(d); });
     var orderDay = DAY_NAMES.indexOf(HF.orderByDay);
-    var out = [], weekends = {};
-    for (var i = 0; i < 35 && Object.keys(weekends).length <= (HF.weeksAhead || 2); i++) {
+    var ahead = HF.daysAhead || 31, out = [];
+    for (var i = 0; i <= ahead; i++) {
       var iso = addDaysISO(now.date, i), dow = weekdayOf(iso);
       if (days.indexOf(dow) === -1) continue;
       var back = (dow - orderDay + 7) % 7 || 7;
       var cutoff = addDaysISO(iso, -back);
       if (nowKey >= cutoff + " " + HF.orderByTime || closedRangeFor(iso)) continue;
-      weekends[cutoff] = true;
-      if (Object.keys(weekends).length > (HF.weeksAhead || 2)) break;
       out.push({ iso: iso, cutoff: cutoff });
     }
     return out;

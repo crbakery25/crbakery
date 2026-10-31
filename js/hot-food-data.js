@@ -4,7 +4,7 @@
    - pickupDays: the days customers can pick up.
    - pickupStart / pickupEnd: first and last pickup time offered (24-hour, every 30 minutes).
      Several customers can choose the same time.
-   - weeksAhead: how many upcoming weekends customers can order for.
+   - daysAhead: how far ahead customers can order (31 = about a month of weekends).
    Items work like the menu (see menu-data.js). An item with fillings gets one order line
    per filling and size, e.g. "Pork Tamales, Half dozen". */
 window.HOT_FOOD = {
@@ -14,7 +14,7 @@ window.HOT_FOOD = {
   pickupDays: ["Saturday", "Sunday"],
   pickupStart: "10:00",
   pickupEnd: "17:00",
-  weeksAhead: 2,
+  daysAhead: 31,
   items: [
     { id: "tamales", name: "Tamales", orderPage: "hot-food.html",
       description: "Choose pork, chicken, or cheese with peppers - or mix and match fillings in one box.",
