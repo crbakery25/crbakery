@@ -31,6 +31,7 @@ window.MENU = {
       items: [
         { id: "pumpkin-cheesecake", name: "Pumpkin Cheesecake", price: 60, description: "Creamy cheesecake made with homemade pumpkin pur\u00e9e, baked in a buttery graham cracker crust, and topped with real pumpkin pieces slow-cooked with cinnamon sticks and brown sugar. Warm, spiced, and full of fall flavor.", image: "images/pumpkin-cheesecake.jpg", alt: "Pumpkin cheesecake topped with a fan of glazed pumpkin", paymentLink: "" },
         { id: "pumpkin-cookies", name: "Pumpkin Cookies", paymentLink: "",
+          description: "All the cozy flavor of our Pumpkin Bread, in cookie form. Made with our homemade pumpkin pur\u00e9e and warm fall spices, these soft, cake-like cookies are tender, perfectly sweet, and full of rich pumpkin flavor.",
           images: [
             { src: "images/pumpkin-cookies.jpg",        alt: "Soft pumpkin cookies on a wooden board" },
             { src: "images/pumpkin-cookies-inside.jpg", alt: "A pumpkin cookie broken in half to show the soft, cakey inside" }
