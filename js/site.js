@@ -680,7 +680,7 @@
       var rows = [];
       s.items.forEach(function (it) {
         if (it.sizes) {
-          it.sizes.forEach(function (z) { rows.push({ id: z.id, name: it.name + ", " + z.label, price: z.price, parent: it.id }); });
+          it.sizes.forEach(function (z) { rows.push({ id: z.id, name: it.name + ", " + z.label, price: z.price, parent: it.id, allergy: it.allergy, allergyShort: it.allergyShort }); });
         } else {
           rows.push(it);
         }
