@@ -499,3 +499,11 @@ html.pop-open { overflow: hidden; }
 .holiday-note p + p { margin-top: .4rem; }
 .box-count { margin: .2rem 0 1rem; color: var(--muted); font-size: .92rem; }
 .box-count.is-over { color: #8a1c12; font-weight: 600; }
+
+/* Pickup location notes */
+.pickup-spot { margin-top: .9rem; padding: .7rem .9rem; background: #fff; border-left: 3px solid var(--gold); border-radius: var(--r); color: var(--ink); font-size: .97rem; }
+.pickup-spot--page { max-width: 46rem; background: #f3ead6; }
+.pickup-pop { width: min(100% - 2rem, 460px); }
+.pickup-pop .pop-text { padding: 2rem 1.75rem 1.75rem; }
+.pickup-pop .pop-text h2 { padding-right: 0; }
+.pickup-pop p { margin: 0; }

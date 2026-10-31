@@ -323,6 +323,21 @@
     try { sessionStorage.setItem(CONFIRM_KEY, JSON.stringify(record)); return true; } catch (e) { return false; }
   }
 
+  function showPickupNotice(spot) {
+    var d = document.createElement("dialog");
+    d.className = "item-pop pickup-pop";
+    d.setAttribute("aria-labelledby", "pickup-pop-title");
+    d.innerHTML = '<div class="pop-text">' +
+      '<h2 id="pickup-pop-title">Hot food pickup location</h2>' +
+      "<p>Your hot food order will be picked up <strong>" + esc(spot) + "</strong>.</p>" +
+      "<p>This is a different spot from our cheesecakes and other treats" + (SITE.pickupArea ? " (" + esc(SITE.pickupArea) + ")" : "") + ".</p>" +
+      '<button type="button" class="btn btn-solid pop-order">Got it</button></div>';
+    document.body.appendChild(d);
+    $("button", d).addEventListener("click", function () { d.close(); });
+    d.addEventListener("click", function (e) { if (e.target === d) d.close(); });
+    if (d.showModal) d.showModal(); else d.setAttribute("open", "");
+  }
+
   function renderConfirmation() {
     var root = $("#confirm-root");
     if (!root) return;
@@ -358,6 +373,8 @@
       [word + " date", o.date ? shortDate(fromISO(o.date), true) : ""], [word + " time", o.time]
     ];
     if (isDelivery) details.push(["Address", o.address]);
+    if (o.pickupSpot) details.push(["Pickup location", o.pickupSpot]);
+    else if (!isDelivery && SITE.pickupArea) details.push(["Pickup area", SITE.pickupArea]);
     if (o.payment) details.push(["Payment", o.payment]);
     if (o.notes) details.push(["Notes", o.notes]);
 
@@ -393,6 +410,9 @@
       '<div class="actions confirm-actions no-print">' +
         '<button type="button" class="btn btn-line" id="confirm-print">Print order details</button>' +
         '<a class="btn btn-line" href="menu.html">Back to the menu</a></div>';
+
+    /* Hot food is picked up somewhere else than cakes: make sure the customer sees it */
+    if (o.pickupSpot) showPickupNotice(o.pickupSpot);
 
     var printBtn = $("#confirm-print", root);
     if (printBtn) printBtn.addEventListener("click", function () { window.print(); });
@@ -459,6 +479,8 @@
     var HF = window.HOT_FOOD;
     if (!HF) return;
     $all("[data-hot-cutoff]").forEach(function (el) { el.textContent = hotCutoffText(HF); });
+    if (HF.pickupLocation) $all("[data-hot-location]").forEach(function (el) { el.textContent = HF.pickupLocation; });
+    if (SITE.pickupArea) $all("[data-pickup-area]").forEach(function (el) { el.textContent = SITE.pickupArea; });
     $all("[data-hot-pickup]").forEach(function (el) {
       el.textContent = HF.pickupDays.join(" or ") + ", " + clockLabel(HF.pickupStart) + " to " + clockLabel(HF.pickupEnd);
     });
@@ -706,12 +728,13 @@
         name: name, phone: fd.get("phone"), email: fd.get("email") || "", fulfillment: "Pickup", prepay: true,
         date: fd.get("date"), time: fd.get("time"), payment: "Venmo (prepayment required)", notes: fd.get("notes") || "",
         items: ls.map(function (l) { return { name: l.item.name, qty: l.qty, price: l.item.price }; }),
-        fee: 0, total: money(total()), sentAt: Date.now()
+        fee: 0, total: money(total()), sentAt: Date.now(), pickupSpot: HF.pickupLocation || ""
       };
       var payload = {
         _subject: "New CR Bakery weekend hot food preorder from " + name,
         order_type: "Weekend hot food preorder - pickup only, confirm once Venmo payment is received",
         name: name, email: record.email, phone: record.phone, pickup_date: record.date, pickup_time: record.time,
+        pickup_location: "Hot food pickup " + (HF.pickupLocation || ""),
         order: text, boxes: boxes, total: record.total, payment: record.payment, notes: record.notes
       };
       if (chosenDay.holiday) payload.holiday = chosenDay.holiday;

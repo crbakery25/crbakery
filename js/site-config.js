@@ -6,6 +6,7 @@ window.SITE = {
   venmoUrl: "https://venmo.com/code?user_id=3268553142697984963&created=1789952430",
   facebookUrl: "https://www.facebook.com/profile.php?id=61571157834804",
   linktreeUrl: "https://linktr.ee/crbakery25",
+  pickupArea: "Rosemont",              // where cheesecakes, cookies and breads are picked up (hot food has its own spot in hot-food-data.js)
   leadTimeHours: 48,                   // minimum notice before pickup; the order form only allows dates at least this far ahead
   delivery: { baseFee: 7, baseMiles: 5, perMileFee: 0.75 },   // $7.00 up to 5 miles, plus $0.75 for each additional mile (capped at 20 miles - see MAX_DELIVERY_MILES in worker/index.js)
   deliveryBlock: { before: 60, after: 60 },   // minutes a delivery blocks around its time (a 2:00 PM delivery holds 1:00-3:00 PM); keep in step with worker/index.js

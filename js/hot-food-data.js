@@ -14,6 +14,7 @@ window.HOT_FOOD = {
   pickupDays: ["Saturday", "Sunday"],
   pickupStart: "10:00",
   pickupEnd: "17:00",
+  pickupLocation: "near 65th St & Fruitridge Rd",   // where hot food is picked up (cakes and other treats: SITE.pickupArea)
   daysAhead: 31,
   boxLimit: 30,          // most boxes per pickup day (each half dozen or dozen = 1 box). The booking
                          // service enforces this too - keep HOT_BOX_LIMIT in worker/index.js the same.
