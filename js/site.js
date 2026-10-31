@@ -402,17 +402,30 @@
       buildTimes();
       loadTaken(dateInput ? dateInput.value : "").then(buildTimes);
     }
+    /* A delivery holds the time around it (1 hour before to 1 hour after by default), so a delivery
+       time is only offered when that whole window is free. The booking service makes the final check. */
+    var block = SITE.deliveryBlock || { before: 60, after: 60 };
+    function windowKeys(slotIndex) {
+      var m = 9 * 60 + slotIndex * 15, keys = [];
+      for (var t = Math.max(m - block.before, 9 * 60); t < m + block.after && t <= 19 * 60; t += 15) {
+        keys.push(String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"));
+      }
+      return keys;
+    }
     function buildTimes() {
       if (!timeSelect) return;
       var keep = timeSelect.value;
       var taken = takenKeys(dateInput ? dateInput.value : "");
+      var forDelivery = fulfillment() === "delivery";
       timeSelect.innerHTML = '<option value="">Choose a time</option>';
-      timeSlots.forEach(function (slot) {
+      timeSlots.forEach(function (slot, i) {
         var isTaken = taken.indexOf(slot.key) !== -1;
+        var blocked = !isTaken && forDelivery && windowKeys(i).some(function (k) { return taken.indexOf(k) !== -1; });
         var opt = document.createElement("option");
         opt.value = slot.label;
         opt.setAttribute("data-key", slot.key);
-        opt.textContent = isTaken ? slot.label + " (taken)" : slot.label;
+        if (blocked) isTaken = true;
+        opt.textContent = blocked ? slot.label + " (unavailable)" : isTaken ? slot.label + " (taken)" : slot.label;
         opt.disabled = isTaken;
         if (slot.label === keep && !isTaken) opt.selected = true;
         timeSelect.appendChild(opt);
@@ -554,11 +567,11 @@
     }
 
     /* Booking service: hold a time, then confirm it once the order is sent */
-    function reserveSlot(date, key, name) {
+    function reserveSlot(date, key, name, kind) {
       return fetch(SITE.bookingApi + "/reserve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: date, time: key, name: name })
+        body: JSON.stringify({ date: date, time: key, name: name, kind: kind })
       }).then(function (res) {
         return res.json().then(function (body) { return { status: res.status, body: body }; });
       });
@@ -651,7 +664,7 @@
         /* Hold the chosen time first so two customers can't take the same one */
         var chosen = timeSelect.options[timeSelect.selectedIndex];
         say("Checking your time...", "");
-        reserveSlot(data.date, chosen ? chosen.getAttribute("data-key") : "", data.name).then(function (r) {
+        reserveSlot(data.date, chosen ? chosen.getAttribute("data-key") : "", data.name, mode).then(function (r) {
           if (r.status === 200 && r.body && r.body.token) {
             sendOrder(r.body);
           } else if (r.status === 409) {

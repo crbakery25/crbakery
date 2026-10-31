@@ -1,5 +1,5 @@
-/* CR Bakery booking service: one order per date and 15-minute time,
-   plus a delivery fee calculator that never reveals the pickup address.
+/* CR Bakery booking service: one order per date and 15-minute time (a delivery holds the
+   2 hours around its time - see DELIVERY_BEFORE_MIN / DELIVERY_AFTER_MIN), plus a delivery fee calculator that never reveals the pickup address.
    Runs as a Cloudflare Worker with a D1 database bound as DB.
    Settings (Worker > Settings > Variables and Secrets):
      ALLOWED_ORIGINS  comma-separated site addresses allowed to call this service
@@ -17,6 +17,11 @@ const MAX_PER_HOUR = 5;    // most times one visitor (IP address) can hold or bo
 const OPEN_MIN = 9 * 60;   // 9:00 AM
 const CLOSE_MIN = 19 * 60; // 7:00 PM
 const MAX_DELIVERY_MILES = 20; // addresses farther than this by driving distance are declined for delivery
+/* A delivery blocks the time around it so no pickup or other delivery is booked while you're out.
+   A 2:00 PM delivery with 60 / 60 holds 1:00 PM up to (not including) 3:00 PM. Keep these in step
+   with deliveryBlock in js/site-config.js, which only decides what the order form shows. */
+const DELIVERY_BEFORE_MIN = 60;
+const DELIVERY_AFTER_MIN = 60;
 
 export default {
   async fetch(request, env) {
@@ -54,22 +59,30 @@ async function reserve(request, env, cors, url) {
   const date = String(body.date || "");
   const time = String(body.time || "");
   const name = String(body.name || "").slice(0, 100);
+  const isDelivery = body.kind === "delivery";
   if (!validDate(date) || !validTime(time) || !name) return json({ error: "Bad request" }, 400, cors);
   const yesterday = new Date(Date.now() - 24 * 3600 * 1000).toISOString().slice(0, 10);
   if (date < yesterday) return json({ error: "Date is in the past" }, 400, cors);
 
   await cleanup(env);
   const ip = request.headers.get("CF-Connecting-IP") || "";
-  const recent = await env.DB.prepare("SELECT COUNT(*) AS n FROM bookings WHERE ip = ? AND created_at > ?")
+  // Counts orders, not the extra rows a delivery uses to block its window (their tokens contain "-")
+  const recent = await env.DB.prepare("SELECT COUNT(*) AS n FROM bookings WHERE ip = ? AND created_at > ? AND token NOT LIKE '%-%'")
     .bind(ip, Date.now() - 3600 * 1000).first();
   if (recent && recent.n >= MAX_PER_HOUR) return json({ error: "Too many requests" }, 429, cors);
 
   const token = randomToken();
   const now = Date.now();
+  /* The chosen time is saved under the token. A delivery also saves every other 15-minute time in
+     its window under token-1, token-2, ... All rows go in together or not at all, so if any time in
+     the window is already taken, nothing is held and the customer is asked to pick another time. */
+  const times = isDelivery ? deliveryWindow(time) : [time];
+  const insert = "INSERT INTO bookings (date, time, name, status, token, ip, created_at, expires_at) VALUES (?, ?, ?, 'hold', ?, ?, ?, ?)";
+  let extra = 0;
+  const statements = times.map((t) => env.DB.prepare(insert)
+    .bind(date, t, name, t === time ? token : token + "-" + (++extra), ip, now, now + HOLD_MINUTES * 60000));
   try {
-    await env.DB.prepare(
-      "INSERT INTO bookings (date, time, name, status, token, ip, created_at, expires_at) VALUES (?, ?, ?, 'hold', ?, ?, ?, ?)"
-    ).bind(date, time, name, token, ip, now, now + HOLD_MINUTES * 60000).run();
+    await env.DB.batch(statements);
   } catch (err) {
     if (String((err && err.message) || err).includes("UNIQUE")) return json({ error: "That time is taken" }, 409, cors);
     throw err;
@@ -81,9 +94,10 @@ async function finalize(request, env, cors) {
   const body = await readJson(request);
   const token = body ? String(body.token || "") : "";
   if (!token) return json({ error: "Bad request" }, 400, cors);
+  if (!validToken(token)) return json({ error: "Bad request" }, 400, cors);
   const result = await env.DB.prepare(
-    "UPDATE bookings SET status = 'booked', expires_at = NULL WHERE token = ? AND (status = 'booked' OR expires_at >= ?)"
-  ).bind(token, Date.now()).run();
+    "UPDATE bookings SET status = 'booked', expires_at = NULL WHERE (token = ? OR token LIKE ?) AND (status = 'booked' OR expires_at >= ?)"
+  ).bind(token, token + "-%", Date.now()).run();
   return json({ ok: result.meta.changes > 0 }, 200, cors);
 }
 
@@ -138,15 +152,19 @@ async function release(request, env, url) {
   if (request.method === "POST") {
     const form = await request.formData();
     token = String(form.get("token") || token);
-    const result = await env.DB.prepare("DELETE FROM bookings WHERE token = ?").bind(token).run();
+    if (!validToken(token)) return page("Already released", "<p>That time is already open, or the link is not valid.</p>");
+    const result = await deleteOrder(env, token);
     return page("Time released", result.meta.changes > 0
       ? "<p>That time is open again for other customers.</p>"
       : "<p>That time was already released.</p>");
   }
+  if (!validToken(token)) return page("Already released", "<p>That time is already open, or the link is not valid.</p>");
   const row = await env.DB.prepare("SELECT date, time, name FROM bookings WHERE token = ?").bind(token).first();
   if (!row) return page("Already released", "<p>That time is already open, or the link is not valid.</p>");
+  const blocks = await env.DB.prepare("SELECT time FROM bookings WHERE token LIKE ? ORDER BY time").bind(token + "-%").all();
   return page("Release this time?",
-    "<p><strong>" + esc(row.name) + "</strong><br>" + esc(row.date) + " at " + esc(prettyTime(row.time)) + "</p>" +
+    "<p><strong>" + esc(row.name) + "</strong><br>" + esc(row.date) + " at " + esc(prettyTime(row.time)) +
+    esc(windowNote(row.time, blocks.results.map((b) => b.time))) + "</p>" +
     '<form method="POST" action="/release"><input type="hidden" name="token" value="' + esc(token) + '">' +
     "<button>Release this time</button></form>");
 }
@@ -158,17 +176,26 @@ async function admin(request, env, url) {
   }
   if (request.method === "POST") {
     const form = await request.formData();
-    await env.DB.prepare("DELETE FROM bookings WHERE id = ?").bind(Number(form.get("id"))).run();
+    const picked = await env.DB.prepare("SELECT token FROM bookings WHERE id = ?").bind(Number(form.get("id"))).first();
+    if (picked) await deleteOrder(env, picked.token.split("-")[0]);
   }
   await cleanup(env);
   const today = new Date(Date.now() - 24 * 3600 * 1000).toISOString().slice(0, 10);
-  const rows = await env.DB.prepare(
-    "SELECT id, date, time, name, status FROM bookings WHERE date >= ? ORDER BY date, time"
+  const all = await env.DB.prepare(
+    "SELECT id, date, time, name, status, token FROM bookings WHERE date >= ? ORDER BY date, time"
   ).bind(today).all();
+  // One line per order: a delivery's extra rows (token-1, token-2, ...) are folded into its own line
+  const blocksFor = {};
+  all.results.forEach((r) => {
+    const i = r.token.indexOf("-");
+    if (i > 0) (blocksFor[r.token.slice(0, i)] = blocksFor[r.token.slice(0, i)] || []).push(r.time);
+  });
+  const rows = { results: all.results.filter((r) => r.token.indexOf("-") === -1) };
   const action = "/admin?key=" + encodeURIComponent(key);
   const list = rows.results.length
     ? rows.results.map((r) =>
-        "<tr><td>" + esc(r.date) + "</td><td>" + esc(prettyTime(r.time)) + "</td><td>" + esc(r.name) + "</td><td>" +
+        "<tr><td>" + esc(r.date) + "</td><td>" + esc(prettyTime(r.time) + windowNote(r.time, blocksFor[r.token] || [])) +
+        "</td><td>" + esc(r.name) + "</td><td>" +
         (r.status === "hold" ? "waiting" : "booked") + "</td><td>" +
         '<form method="POST" action="' + esc(action) + '"><input type="hidden" name="id" value="' + r.id + '">' +
         "<button>Release</button></form></td></tr>").join("")
@@ -184,6 +211,38 @@ async function cleanup(env) {
   const now = Date.now();
   const cutoff = new Date(now - 24 * 3600 * 1000).toISOString().slice(0, 10);
   await env.DB.prepare("DELETE FROM bookings WHERE (status = 'hold' AND expires_at < ?) OR date < ?").bind(now, cutoff).run();
+}
+
+/* Every 15-minute time a delivery at `time` holds, within opening hours */
+function deliveryWindow(time) {
+  const start = toMin(time) - DELIVERY_BEFORE_MIN, end = toMin(time) + DELIVERY_AFTER_MIN;
+  const out = [];
+  for (let t = Math.max(start, OPEN_MIN); t < end && t <= CLOSE_MIN; t += 15) out.push(fromMin(t));
+  return out;
+}
+
+/* " (delivery, holds 1:00 PM - 3:00 PM)" for a delivery; "" for a pickup */
+function windowNote(time, blockTimes) {
+  if (!blockTimes.length) return "";
+  const all = blockTimes.concat([time]).map(toMin).sort((a, b) => a - b);
+  return " (delivery, holds " + prettyTime(fromMin(all[0])) + " - " + prettyTime(fromMin(all[all.length - 1] + 15)) + ")";
+}
+
+/* Frees an order's time, plus the rest of the window if it was a delivery */
+async function deleteOrder(env, token) {
+  return env.DB.prepare("DELETE FROM bookings WHERE token = ? OR token LIKE ?").bind(token, token + "-%").run();
+}
+
+function validToken(s) {
+  return /^[0-9a-f]{64}$/.test(s);
+}
+
+function toMin(s) {
+  return Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5));
+}
+
+function fromMin(m) {
+  return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
 }
 
 async function readJson(request) {
