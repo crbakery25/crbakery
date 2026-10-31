@@ -95,13 +95,13 @@
 
   function cardHTML(item) {
     if (item.images && item.images.length > 1) {
-      return '<div class="card">' + galleryHTML(item) +
+      return '<div class="card" data-item="' + esc(item.id) + '">' + galleryHTML(item) +
         '<a class="card-body card-link" href="' + orderHref(item) + '"><h3>' + esc(item.name) + "</h3>" +
         (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
         (item.description ? '<p class="card-desc">' + esc(item.description) + "</p>" : "") +
         "</a></div>";
     }
-    return '<a class="card" href="' + orderHref(item) + '">' +
+    return '<a class="card" data-item="' + esc(item.id) + '" href="' + orderHref(item) + '">' +
       '<div class="card-photo">' + photo(item) + "</div>" +
       '<div class="card-body"><h3>' + esc(item.name) + "</h3>" +
       (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
@@ -116,7 +116,7 @@
         ? '<img src="' + esc(item.image) + '" alt="" loading="lazy">'
         : '<span class="ph" aria-hidden="true">' + CAKE_ICON + "</span>") + "</span>";
     }
-    return '<a class="row" href="' + orderHref(item) + '">' + thumb +
+    return '<a class="row" data-item="' + esc(item.id) + '" href="' + orderHref(item) + '">' + thumb +
       '<span class="row-name">' + esc(item.name) + "</span>" +
       '<span class="row-leader" aria-hidden="true"></span>' +
       '<span class="price">' + money(item.price) + "</span></a>";
@@ -166,8 +166,11 @@
   }
 
   /* Photo strips: arrows step one photo; dots follow the photo in view */
-  function initGalleries() {
-    $all("[data-gallery]").forEach(function (g) {
+  function initGalleries(root) {
+    $all("[data-gallery]", root).forEach(initGallery);
+  }
+  function initGallery(g) {
+    {
       var track = $(".gallery-track", g), dots = $all(".gallery-dots span", g);
       function current() { return Math.round(track.scrollLeft / track.clientWidth); }
       function show() {
@@ -183,6 +186,61 @@
       });
       track.addEventListener("scroll", function () { window.requestAnimationFrame(show); });
       show();
+    }
+  }
+
+  /* Item pop-up: clicking a menu item's photo or name shows a larger photo (or photos), the
+     description and an "Add to order" button. Without JavaScript the links still go to the order form. */
+  function findItem(id) {
+    var found = null;
+    activeSections().forEach(function (s) {
+      s.items.forEach(function (it) { if (it.id === id) found = it; });
+    });
+    return found;
+  }
+
+  function popPhotoHTML(item) {
+    if (item.images && item.images.length > 1) return galleryHTML(item).replace(/ loading="lazy"/g, "");
+    var src = item.image || (item.images && item.images[0] && item.images[0].src);
+    var alt = item.alt || (item.images && item.images[0] && item.images[0].alt) || item.name;
+    return '<div class="card-photo">' + (src ? '<img src="' + esc(src) + '" alt="' + esc(alt) + '">' : photo(item)) + "</div>";
+  }
+
+  var pop = null;
+  function openItem(item) {
+    if (!pop) {
+      pop = document.createElement("dialog");
+      pop.className = "item-pop";
+      pop.setAttribute("aria-labelledby", "pop-title");
+      pop.innerHTML = '<button type="button" class="pop-close" aria-label="Close">\u00D7</button><div class="pop-inner"></div>';
+      document.body.appendChild(pop);
+      $(".pop-close", pop).addEventListener("click", function () { pop.close(); });
+      pop.addEventListener("click", function (e) { if (e.target === pop) pop.close(); });   // click outside the box
+      pop.addEventListener("close", function () { document.documentElement.classList.remove("pop-open"); });
+    }
+    $(".pop-inner", pop).innerHTML =
+      '<div class="pop-photo">' + popPhotoHTML(item) + "</div>" +
+      '<div class="pop-text">' +
+      '<h2 id="pop-title">' + esc(item.name) + "</h2>" +
+      (item.sizes ? sizesHTML(item) : '<p class="pop-price price">' + money(item.price) + "</p>") +
+      (item.description ? '<p class="pop-desc">' + esc(item.description) + "</p>" : "") +
+      '<a class="btn btn-solid pop-order" href="' + orderHref(item) + '">' + (item.sizes ? "Choose a size and order" : "Add to order") + "</a>" +
+      "</div>";
+    document.documentElement.classList.add("pop-open");
+    if (pop.showModal) pop.showModal(); else pop.setAttribute("open", "");
+    initGalleries(pop);
+    $(".pop-close", pop).focus();
+  }
+
+  function initItemPopups() {
+    document.addEventListener("click", function (e) {
+      var el = e.target.closest("[data-item]");
+      if (!el || e.target.closest(".gallery-btn") || e.defaultPrevented) return;
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var item = findItem(el.getAttribute("data-item"));
+      if (!item) return;
+      e.preventDefault();
+      openItem(item);
     });
   }
 
@@ -798,7 +856,8 @@
     showTestBanner();
     renderMenuPage();
     renderCardBlocks();
-    initGalleries();
+    initGalleries(document);
+    initItemPopups();
     fillContactLinks();
     showClosureNotice();
     initOrderForm();

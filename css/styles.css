@@ -230,6 +230,35 @@ a { color: var(--navy); }
 .gallery-dots span { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.6); box-shadow: 0 0 2px rgba(0,0,0,.4); }
 .gallery-dots span.is-on { background: #fff; }
 .card-link { color: inherit; text-decoration: none; }
+
+/* Item pop-up: larger photo, description and "Add to order" */
+html.pop-open { overflow: hidden; }
+[data-item] { cursor: pointer; }
+.item-pop {
+  width: min(100% - 2rem, 920px); max-height: min(92vh, 760px); padding: 0; border: 0;
+  border-radius: 6px; background: #fff; color: var(--ink); overflow: auto;
+  box-shadow: 0 20px 60px rgba(10, 14, 40, .45);
+}
+.item-pop::backdrop { background: rgba(20, 27, 64, .72); }
+.pop-inner { display: grid; grid-template-columns: 1.15fr 1fr; }
+.pop-photo .card-photo { border-radius: 0; height: 100%; }
+.pop-text { padding: 2.2rem 2rem 2rem; display: flex; flex-direction: column; gap: .9rem; }
+.pop-text h2 { margin: 0; padding-right: 2rem; color: var(--navy); font-size: clamp(1.6rem, 3vw, 2.1rem); }
+.pop-text h2::after { content: ""; display: block; width: 48px; height: 2px; background: var(--gold); margin-top: .9rem; }
+.pop-price { margin: 0; font-size: 1.25rem; }
+.pop-text .card-sizes { font-size: 1.05rem; gap: .45rem; }
+.pop-desc { margin: 0; color: var(--muted); line-height: 1.6; }
+.pop-order { align-self: flex-start; margin-top: .6rem; }
+.pop-close {
+  position: absolute; top: .6rem; right: .6rem; z-index: 2; width: 2.4rem; height: 2.4rem;
+  border: 0; border-radius: 50%; background: rgba(255,255,255,.92); color: var(--navy);
+  font: 400 1.8rem/1 var(--sans); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.2);
+}
+@media (max-width: 700px) {
+  .pop-inner { grid-template-columns: 1fr; }
+  .pop-text { padding: 1.4rem 1.25rem 1.6rem; }
+  .pop-order { align-self: stretch; }
+}
 .card-desc { grid-column: 1 / -1; margin: .25rem 0 0; color: var(--muted); font-size: .95rem; }
 .price { font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
 .card:hover h3, .card-link:hover h3, .row:hover .row-name {
