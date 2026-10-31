@@ -6,6 +6,8 @@
    - image:       optional, e.g. "images/peach.jpg" (a placeholder shows until you add one)
    - alt:         optional short description of the photo, for screen readers
    - paymentLink: optional, reserved for a Stripe Payment Link later
+   - images:      optional, for more than one photo: images: [{ src: "images/a.jpg", alt: "..." }, ...]
+                  Customers can swipe through them (or use the arrows) on the menu.
    - sizes:       optional, for an item sold in more than one size. Leave out price and list
                   each size instead: sizes: [{ id: "x-6", label: "Half dozen", price: 10 }, ...]
                   The menu shows one photo with every size and price; the order form gets a line per size.
@@ -30,7 +32,12 @@ window.MENU = {
           sizes: [
             { id: "pumpkin-cookies-6",  label: "Half dozen", price: 10 },
             { id: "pumpkin-cookies-12", label: "Dozen",      price: 18 }
-          ] }
+          ] },
+        { id: "pumpkin-bread", name: "Pumpkin Bread", price: 18, description: "",
+          images: [
+            { src: "images/pumpkin-bread.jpg",        alt: "A whole loaf of pumpkin bread on a wooden board" },
+            { src: "images/pumpkin-bread-sliced.jpg", alt: "Pumpkin bread cut open to show the soft inside" }
+          ], paymentLink: "" }
       ]
     },
     {

@@ -78,7 +78,29 @@
     }).join("") + "</ul>";
   }
 
+  /* An item with more than one photo (images: [...]) gets a photo strip customers can swipe,
+     or step through with the arrows. The name and price below still link to the order form. */
+  function galleryHTML(item) {
+    var imgs = item.images;
+    return '<div class="card-photo gallery" data-gallery>' +
+      '<div class="gallery-track" tabindex="0" aria-label="Photos of ' + esc(item.name) + '">' + imgs.map(function (im, i) {
+        return '<img src="' + esc(im.src) + '" alt="' + esc(im.alt || item.name) + '"' + (i ? ' loading="lazy"' : "") + ">";
+      }).join("") + "</div>" +
+      '<button type="button" class="gallery-btn gallery-prev" data-dir="-1" aria-label="Previous photo">\u2039</button>' +
+      '<button type="button" class="gallery-btn gallery-next" data-dir="1" aria-label="Next photo">\u203A</button>' +
+      '<div class="gallery-dots" aria-hidden="true">' + imgs.map(function (im, i) {
+        return '<span' + (i ? "" : ' class="is-on"') + "></span>";
+      }).join("") + "</div></div>";
+  }
+
   function cardHTML(item) {
+    if (item.images && item.images.length > 1) {
+      return '<div class="card">' + galleryHTML(item) +
+        '<a class="card-body card-link" href="' + orderHref(item) + '"><h3>' + esc(item.name) + "</h3>" +
+        (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
+        (item.description ? '<p class="card-desc">' + esc(item.description) + "</p>" : "") +
+        "</a></div>";
+    }
     return '<a class="card" href="' + orderHref(item) + '">' +
       '<div class="card-photo">' + photo(item) + "</div>" +
       '<div class="card-body"><h3>' + esc(item.name) + "</h3>" +
@@ -141,6 +163,27 @@
         (s.note ? '<p class="section-note">' + esc(s.note) + "</p>" : "") + "</div>" +
         '<div class="' + (s.layout === "rows" ? "rows" : "cards") + '">' + itemsHTML(s) + "</div></section>";
     }).join("");
+  }
+
+  /* Photo strips: arrows step one photo; dots follow the photo in view */
+  function initGalleries() {
+    $all("[data-gallery]").forEach(function (g) {
+      var track = $(".gallery-track", g), dots = $all(".gallery-dots span", g);
+      function current() { return Math.round(track.scrollLeft / track.clientWidth); }
+      function show() {
+        var i = current();
+        dots.forEach(function (d, j) { d.classList.toggle("is-on", j === i); });
+        $(".gallery-prev", g).disabled = i === 0;
+        $(".gallery-next", g).disabled = i >= dots.length - 1;
+      }
+      $all(".gallery-btn", g).forEach(function (b) {
+        b.addEventListener("click", function () {
+          track.scrollTo({ left: (current() + Number(b.getAttribute("data-dir"))) * track.clientWidth, behavior: "smooth" });
+        });
+      });
+      track.addEventListener("scroll", function () { window.requestAnimationFrame(show); });
+      show();
+    });
   }
 
   /* Home page: just the cards for one section */
@@ -755,6 +798,7 @@
     showTestBanner();
     renderMenuPage();
     renderCardBlocks();
+    initGalleries();
     fillContactLinks();
     showClosureNotice();
     initOrderForm();
