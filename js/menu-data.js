@@ -85,7 +85,7 @@ window.MENU = {
       description: "Baked fresh, by the half dozen or dozen.",
       layout: "cards",
       items: [   // add a photo by setting image: "images/your-photo.jpg" (or images: [...] for several)
-        { id: "classic-chocolate-chip", name: "Classic Chocolate Chip Cookies", description: "", image: "", alt: "", paymentLink: "",
+        { id: "classic-chocolate-chip", name: "Classic Chocolate Chip Cookies", description: "Our classic chocolate chip cookies are rich and buttery, loaded with chocolate chips in every bite. Golden and crisp on the edges with a soft, chewy center, they hit that perfect balance of crunch and softness. A timeless favorite, baked just right.", image: "", alt: "", paymentLink: "",
           sizes: [
             { id: "classic-chocolate-chip-6",  label: "Half dozen", price: 10 },
             { id: "classic-chocolate-chip-12", label: "Dozen",      price: 15 }
