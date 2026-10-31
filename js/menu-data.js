@@ -114,14 +114,14 @@ window.MENU = {
       description: "Sweet breads, baked by the loaf.",
       layout: "cards",
       items: [
-        { id: "banana-nut-loaf", name: "Banana Nut Loaf", price: 20, description: "Banana bread packed with walnuts and topped with toasted walnuts.",
+        { id: "banana-nut-loaf", name: "Banana Nut Loaf", price: 20, description: "Our moist banana bread, loaded with chopped walnuts and crowned with a thick layer of walnuts that toast golden and crunchy in the oven. A soft, tender crumb with a nutty bite in every slice.",
           allergyShort: "Contains nuts", allergy: "Contains tree nuts (walnuts). Not suitable for anyone with a nut allergy.",
           paymentLink: "",
           images: [
             { src: "images/banana-nut-loaf.jpg",        alt: "A banana nut loaf topped with walnuts on a wooden board" },
             { src: "images/banana-nut-loaf-sliced.jpg", alt: "Banana nut loaf sliced to show walnuts throughout" }
           ] },
-        { id: "banana-bread", name: "Banana Bread", price: 16, description: "Classic banana bread, baked by the loaf.", paymentLink: "",
+        { id: "banana-bread", name: "Banana Bread", price: 16, description: "A classic, moist banana bread baked to a deep golden-brown crust. Every slice has a soft, tender crumb flecked with real banana and just the right amount of sweetness. Simple, comforting, and perfect with your morning coffee.", paymentLink: "",
           images: [
             { src: "images/banana-bread.jpg",        alt: "A golden loaf of banana bread on a wooden board" },
             { src: "images/banana-bread-sliced.jpg", alt: "Banana bread sliced to show the soft inside" }
