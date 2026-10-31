@@ -100,6 +100,7 @@ window.MENU = {
             { id: "mm-cookies-12", label: "Dozen",      price: 18 }
           ] },
         { id: "mexican-wedding", name: "Mexican Wedding Cookies", description: "", image: "", alt: "", paymentLink: "",
+          allergyShort: "Contains nuts", allergy: "Contains tree nuts. Not suitable for anyone with a nut allergy.",
           sizes: [
             { id: "mexican-wedding-6",  label: "Half dozen", price: 10 },
             { id: "mexican-wedding-12", label: "Dozen",      price: 15 }
