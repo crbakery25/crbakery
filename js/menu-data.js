@@ -16,13 +16,15 @@ window.MENU = {
   sections: [
     {
       id: "seasonal",
-      title: "Seasonal special",
+      title: "Seasonal specials",
       description: "Here for a limited time only.",
       availableUntil: "2026-11-30",
       note: "Available through November 30.",
       layout: "cards",
       items: [
-        { id: "pumpkin-cheesecake", name: "Pumpkin Cheesecake", price: 60, description: "", image: "images/pumpkin-cheesecake.jpg", alt: "Pumpkin cheesecake topped with a fan of glazed pumpkin", paymentLink: "" }
+        { id: "pumpkin-cheesecake", name: "Pumpkin Cheesecake", price: 60, description: "", image: "images/pumpkin-cheesecake.jpg", alt: "Pumpkin cheesecake topped with a fan of glazed pumpkin", paymentLink: "" },
+        { id: "pumpkin-cookies-6",  name: "Pumpkin Cookies (6)",  price: 10, description: "Half dozen", image: "images/pumpkin-cookies.jpg", alt: "Soft pumpkin cookies on a wooden board", paymentLink: "" },
+        { id: "pumpkin-cookies-12", name: "Pumpkin Cookies (12)", price: 18, description: "Dozen", image: "images/pumpkin-cookies.jpg", alt: "Soft pumpkin cookies on a wooden board", paymentLink: "" }
       ]
     },
     {

@@ -612,7 +612,7 @@
       e.preventDefault();
       var ls = lines();
       if (!ls.length) {
-        say("Add at least one cake to send your order.", "error");
+        say("Add at least one item to send your order.", "error");
         host.scrollIntoView({ block: "center" });
         return;
       }
