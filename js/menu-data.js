@@ -29,7 +29,7 @@ window.MENU = {
       note: "Available through November 30.",
       layout: "cards",
       items: [
-        { id: "pumpkin-cheesecake", name: "Pumpkin Cheesecake", price: 60, description: "", image: "images/pumpkin-cheesecake.jpg", alt: "Pumpkin cheesecake topped with a fan of glazed pumpkin", paymentLink: "" },
+        { id: "pumpkin-cheesecake", name: "Pumpkin Cheesecake", price: 60, description: "Creamy cheesecake made with homemade pumpkin pur\u00e9e, baked in a buttery graham cracker crust, and topped with real pumpkin pieces slow-cooked with cinnamon sticks and brown sugar. Warm, spiced, and full of fall flavor.", image: "images/pumpkin-cheesecake.jpg", alt: "Pumpkin cheesecake topped with a fan of glazed pumpkin", paymentLink: "" },
         { id: "pumpkin-cookies", name: "Pumpkin Cookies", paymentLink: "",
           images: [
             { src: "images/pumpkin-cookies.jpg",        alt: "Soft pumpkin cookies on a wooden board" },
