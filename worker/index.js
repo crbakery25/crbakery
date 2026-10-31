@@ -1,4 +1,4 @@
-/* CR Bakery booking service: one order per date and 15-minute time (a delivery holds the
+/* CR Bakery booking service: one order per date and 30-minute time (a delivery holds the
    2 hours around its time - see DELIVERY_BEFORE_MIN / DELIVERY_AFTER_MIN), plus a delivery fee calculator that never reveals the pickup address.
    Runs as a Cloudflare Worker with a D1 database bound as DB.
    Settings (Worker > Settings > Variables and Secrets):
@@ -16,6 +16,7 @@ const HOLD_MINUTES = 5; // a time held while an order is being sent frees itself
 const MAX_PER_HOUR = 5;    // most times one visitor (IP address) can hold or book in an hour
 const OPEN_MIN = 9 * 60;   // 9:00 AM
 const CLOSE_MIN = 19 * 60; // 7:00 PM
+const SLOT_MIN = 30;       // pickup and delivery times are offered every 30 minutes (9:00, 9:30, 10:00, ...)
 const MAX_DELIVERY_MILES = 20; // addresses farther than this by driving distance are declined for delivery
 /* A delivery blocks the time around it so no pickup or other delivery is booked while you're out.
    A 2:00 PM delivery with 60 / 60 holds 1:00 PM up to (not including) 3:00 PM. Keep these in step
@@ -73,10 +74,17 @@ async function reserve(request, env, cors, url) {
 
   const token = randomToken();
   const now = Date.now();
-  /* The chosen time is saved under the token. A delivery also saves every other 15-minute time in
+  /* The chosen time is saved under the token. A delivery also saves every other 30-minute time in
      its window under token-1, token-2, ... All rows go in together or not at all, so if any time in
      the window is already taken, nothing is held and the customer is asked to pick another time. */
   const times = isDelivery ? deliveryWindow(time) : [time];
+  /* Older orders may sit on a quarter hour (10:15, 10:45) from before times went to every 30 minutes.
+     Treat one of those as taking the half hour it falls in. */
+  const span = [toMin(times[0]), toMin(times[times.length - 1]) + SLOT_MIN - 1];
+  const clash = await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM bookings WHERE date = ? AND (CAST(substr(time, 1, 2) AS INTEGER) * 60 + CAST(substr(time, 4, 2) AS INTEGER)) BETWEEN ? AND ?"
+  ).bind(date, span[0], span[1]).first();
+  if (clash && clash.n > 0) return json({ error: "That time is taken" }, 409, cors);
   const insert = "INSERT INTO bookings (date, time, name, status, token, ip, created_at, expires_at) VALUES (?, ?, ?, 'hold', ?, ?, ?, ?)";
   let extra = 0;
   const statements = times.map((t) => env.DB.prepare(insert)
@@ -213,11 +221,11 @@ async function cleanup(env) {
   await env.DB.prepare("DELETE FROM bookings WHERE (status = 'hold' AND expires_at < ?) OR date < ?").bind(now, cutoff).run();
 }
 
-/* Every 15-minute time a delivery at `time` holds, within opening hours */
+/* Every 30-minute time a delivery at `time` holds, within opening hours */
 function deliveryWindow(time) {
   const start = toMin(time) - DELIVERY_BEFORE_MIN, end = toMin(time) + DELIVERY_AFTER_MIN;
   const out = [];
-  for (let t = Math.max(start, OPEN_MIN); t < end && t <= CLOSE_MIN; t += 15) out.push(fromMin(t));
+  for (let t = Math.max(start, OPEN_MIN); t < end && t <= CLOSE_MIN; t += SLOT_MIN) out.push(fromMin(t));
   return out;
 }
 
@@ -225,7 +233,7 @@ function deliveryWindow(time) {
 function windowNote(time, blockTimes) {
   if (!blockTimes.length) return "";
   const all = blockTimes.concat([time]).map(toMin).sort((a, b) => a - b);
-  return " (delivery, holds " + prettyTime(fromMin(all[0])) + " - " + prettyTime(fromMin(all[all.length - 1] + 15)) + ")";
+  return " (delivery, holds " + prettyTime(fromMin(all[0])) + " - " + prettyTime(fromMin(all[all.length - 1] + SLOT_MIN)) + ")";
 }
 
 /* Frees an order's time, plus the rest of the window if it was a delivery */
@@ -263,7 +271,7 @@ function validTime(s) {
   const m = /^(\d{2}):(\d{2})$/.exec(s);
   if (!m) return false;
   const t = Number(m[1]) * 60 + Number(m[2]);
-  return t >= OPEN_MIN && t <= CLOSE_MIN && t % 15 === 0;
+  return t >= OPEN_MIN && t <= CLOSE_MIN && t % SLOT_MIN === 0;
 }
 
 function prettyTime(s) {
