@@ -109,11 +109,8 @@ window.MENU = {
       description: "Sweet breads, baked by the loaf.",
       layout: "cards",
       items: [
-        { id: "banana-nut-loaf", name: "Banana Nut Loaf", price: 20, description: "Banana bread packed with walnuts and topped with toasted walnuts.", paymentLink: "",
-          images: [
-            { src: "images/banana-nut-loaf.jpg",        alt: "A banana nut loaf topped with walnuts on a wooden board" },
-            { src: "images/banana-nut-loaf-sliced.jpg", alt: "Banana nut loaf sliced to show walnuts throughout" }
-          ] }
+        { id: "banana-nut-loaf", name: "Banana Nut Loaf", price: 20, description: "Banana bread packed with walnuts and topped with toasted walnuts.",
+          image: "images/banana-nut-loaf.jpg", alt: "A banana nut loaf topped with walnuts on a wooden board", paymentLink: "" }
       ]
     }
   ]
