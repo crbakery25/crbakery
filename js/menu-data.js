@@ -52,7 +52,7 @@ window.MENU = {
       description: "Handcrafted 9-inch artisanal rounds, sold as whole cakes.",
       layout: "cards",
       items: [
-        { id: "blueberry-crumble", name: "Blueberry Crumble", price: 60, description: "", image: "images/blueberry-crumble.jpg", alt: "Blueberry cheesecake with crumb topping and a white drizzle", paymentLink: "" },
+        { id: "blueberry-crumble", name: "Blueberry Crumble", price: 60, description: "A creamy cheesecake with real blueberries throughout, baked in a homemade buttery graham cracker crust. Topped with homemade blueberry glaze, fresh fruit, and a homemade crumble, then finished with a drizzle of lemon white chocolate ganache. Bright, rich, and bursting with blueberry flavor.", image: "images/blueberry-crumble.jpg", alt: "Blueberry cheesecake with crumb topping and a white drizzle", paymentLink: "" },
         { id: "apple-crumble",     name: "Apple Crumble",     price: 60, description: "", image: "images/apple-crumble.jpg", alt: "Cheesecake with a golden crumb topping", paymentLink: "" },
         { id: "fresh-strawberry",  name: "Fresh Strawberry",  price: 50, description: "", image: "images/fresh-strawberry.jpg", alt: "Cheesecake topped with fresh strawberries and glaze", paymentLink: "" },
         { id: "berry-bliss",       name: "Berry Bliss",       price: 45, description: "Creamy blueberry cheesecake baked in a buttery graham cracker crust, finished with a glossy strawberry glaze, fresh strawberries, and plump blueberries. Rich, smooth, and bursting with berry flavor.", image: "images/berry-bliss.jpg", alt: "Cheesecake topped with glazed strawberries and fresh blueberries", paymentLink: "" },
