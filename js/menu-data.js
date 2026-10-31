@@ -114,6 +114,11 @@ window.MENU = {
           images: [
             { src: "images/banana-nut-loaf.jpg",        alt: "A banana nut loaf topped with walnuts on a wooden board" },
             { src: "images/banana-nut-loaf-sliced.jpg", alt: "Banana nut loaf sliced to show walnuts throughout" }
+          ] },
+        { id: "banana-bread", name: "Banana Bread", price: 16, description: "Classic banana bread, baked by the loaf.", paymentLink: "",
+          images: [
+            { src: "images/banana-bread.jpg",        alt: "A golden loaf of banana bread on a wooden board" },
+            { src: "images/banana-bread-sliced.jpg", alt: "Banana bread sliced to show the soft inside" }
           ] }
       ]
     }
