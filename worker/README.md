@@ -1,6 +1,6 @@
 # Booking service (Cloudflare Worker)
 
-Stops two orders from taking the same date and 15-minute time. A delivery blocks the 2 hours
+Stops two orders from taking the same date and time. Times are every 30 minutes from 10:00 AM to 7:00 PM. A delivery blocks the 2 hours
 around its time (1 hour before to 1 hour after, so a 2:00 PM delivery holds 1:00-3:00 PM), so no
 pickup or other delivery can be booked while you're out. To change the window, edit
 `DELIVERY_BEFORE_MIN` / `DELIVERY_AFTER_MIN` in `index.js` and `deliveryBlock` in
