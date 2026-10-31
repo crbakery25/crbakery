@@ -28,7 +28,11 @@ window.MENU = {
       layout: "cards",
       items: [
         { id: "pumpkin-cheesecake", name: "Pumpkin Cheesecake", price: 60, description: "", image: "images/pumpkin-cheesecake.jpg", alt: "Pumpkin cheesecake topped with a fan of glazed pumpkin", paymentLink: "" },
-        { id: "pumpkin-cookies", name: "Pumpkin Cookies", image: "images/pumpkin-cookies.jpg", alt: "Soft pumpkin cookies on a wooden board", paymentLink: "",
+        { id: "pumpkin-cookies", name: "Pumpkin Cookies", paymentLink: "",
+          images: [
+            { src: "images/pumpkin-cookies.jpg",        alt: "Soft pumpkin cookies on a wooden board" },
+            { src: "images/pumpkin-cookies-inside.jpg", alt: "A pumpkin cookie broken in half to show the soft, cakey inside" }
+          ],
           sizes: [
             { id: "pumpkin-cookies-6",  label: "Half dozen", price: 10 },
             { id: "pumpkin-cookies-12", label: "Dozen",      price: 18 }
