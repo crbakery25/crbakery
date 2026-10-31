@@ -71,10 +71,18 @@
     return "contact.html?add=" + encodeURIComponent(item.id) + "#order";
   }
 
+  /* An item sold in several sizes (e.g. half dozen / dozen) lists each size and price under its photo */
+  function sizesHTML(item) {
+    return '<ul class="card-sizes">' + item.sizes.map(function (s) {
+      return '<li><span>' + esc(s.label) + '</span><span class="row-leader" aria-hidden="true"></span><span class="price">' + money(s.price) + "</span></li>";
+    }).join("") + "</ul>";
+  }
+
   function cardHTML(item) {
     return '<a class="card" href="' + orderHref(item) + '">' +
       '<div class="card-photo">' + photo(item) + "</div>" +
-      '<div class="card-body"><h3>' + esc(item.name) + '</h3><span class="price">' + money(item.price) + "</span>" +
+      '<div class="card-body"><h3>' + esc(item.name) + "</h3>" +
+      (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
       (item.description ? '<p class="card-desc">' + esc(item.description) + "</p>" : "") +
       "</div></a>";
   }
@@ -292,9 +300,18 @@
     var dv = delivery();
 
     host.innerHTML = activeSections().map(function (s) {
-      return '<div class="order-group"><h3>' + esc(s.title) + "</h3>" + s.items.map(function (it) {
+      /* An item with sizes becomes one order line per size, e.g. "Pumpkin Cookies, Half dozen" */
+      var rows = [];
+      s.items.forEach(function (it) {
+        if (it.sizes) {
+          it.sizes.forEach(function (z) { rows.push({ id: z.id, name: it.name + ", " + z.label, price: z.price, parent: it.id }); });
+        } else {
+          rows.push(it);
+        }
+      });
+      return '<div class="order-group"><h3>' + esc(s.title) + "</h3>" + rows.map(function (it) {
         byId[it.id] = it;
-        return '<div class="order-row" data-id="' + esc(it.id) + '">' +
+        return '<div class="order-row" data-id="' + esc(it.id) + '"' + (it.parent ? ' data-parent="' + esc(it.parent) + '"' : "") + ">" +
           '<div class="order-name">' + esc(it.name) + '<span class="order-price">' + money(it.price) + "</span></div>" +
           '<div class="stepper">' +
           '<button type="button" data-step="-1" aria-label="Remove one ' + esc(it.name) + '">\u2212</button>' +
@@ -720,6 +737,12 @@
       addItem: function (id) {
         var row = $('.order-row[data-id="' + id + '"]', host);
         if (row && rowQty(row) < 1) setQty(id, 1);
+        /* For an item with sizes, show its size lines so the customer picks one */
+        var first = !row && $('.order-row[data-parent="' + id + '"]', host);
+        if (first) {
+          $all('.order-row[data-parent="' + id + '"]', host).forEach(function (r) { r.classList.add("is-highlight"); });
+          setTimeout(function () { first.scrollIntoView({ block: "center" }); }, 50);
+        }
       }
     };
 

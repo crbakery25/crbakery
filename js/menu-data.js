@@ -6,6 +6,9 @@
    - image:       optional, e.g. "images/peach.jpg" (a placeholder shows until you add one)
    - alt:         optional short description of the photo, for screen readers
    - paymentLink: optional, reserved for a Stripe Payment Link later
+   - sizes:       optional, for an item sold in more than one size. Leave out price and list
+                  each size instead: sizes: [{ id: "x-6", label: "Half dozen", price: 10 }, ...]
+                  The menu shows one photo with every size and price; the order form gets a line per size.
 
    A section can also be a limited-time special. Add:
    - availableUntil: "YYYY-MM-DD"  (the last day it is offered; the whole
@@ -23,8 +26,11 @@ window.MENU = {
       layout: "cards",
       items: [
         { id: "pumpkin-cheesecake", name: "Pumpkin Cheesecake", price: 60, description: "", image: "images/pumpkin-cheesecake.jpg", alt: "Pumpkin cheesecake topped with a fan of glazed pumpkin", paymentLink: "" },
-        { id: "pumpkin-cookies-6",  name: "Pumpkin Cookies (6)",  price: 10, description: "Half dozen", image: "images/pumpkin-cookies.jpg", alt: "Soft pumpkin cookies on a wooden board", paymentLink: "" },
-        { id: "pumpkin-cookies-12", name: "Pumpkin Cookies (12)", price: 18, description: "Dozen", image: "images/pumpkin-cookies.jpg", alt: "Soft pumpkin cookies on a wooden board", paymentLink: "" }
+        { id: "pumpkin-cookies", name: "Pumpkin Cookies", image: "images/pumpkin-cookies.jpg", alt: "Soft pumpkin cookies on a wooden board", paymentLink: "",
+          sizes: [
+            { id: "pumpkin-cookies-6",  label: "Half dozen", price: 10 },
+            { id: "pumpkin-cookies-12", label: "Dozen",      price: 18 }
+          ] }
       ]
     },
     {
