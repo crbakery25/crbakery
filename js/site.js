@@ -98,14 +98,12 @@
       return '<div class="card" data-item="' + esc(item.id) + '">' + galleryHTML(item) +
         '<a class="card-body card-link" href="' + orderHref(item) + '"><h3>' + esc(item.name) + "</h3>" +
         (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
-        (item.description ? '<p class="card-desc">' + esc(item.description) + "</p>" : "") +
         "</a></div>";
     }
     return '<a class="card" data-item="' + esc(item.id) + '" href="' + orderHref(item) + '">' +
       '<div class="card-photo">' + photo(item) + "</div>" +
       '<div class="card-body"><h3>' + esc(item.name) + "</h3>" +
       (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
-      (item.description ? '<p class="card-desc">' + esc(item.description) + "</p>" : "") +
       "</div></a>";
   }
 

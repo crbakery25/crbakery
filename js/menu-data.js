@@ -2,7 +2,7 @@
    To add an item, copy a line inside "items" and change it.
    - id:          short unique name, lowercase with dashes
    - price:       number, no $ sign
-   - description: optional, shown under the name on cards
+   - description: optional, shown in the pop-up when a customer clicks the item's photo or name
    - image:       optional, e.g. "images/peach.jpg" (a placeholder shows until you add one)
    - alt:         optional short description of the photo, for screen readers
    - paymentLink: optional, reserved for a Stripe Payment Link later
