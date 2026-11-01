@@ -37,8 +37,9 @@ window.MENU = {
             { src: "images/pumpkin-cookies-inside.jpg", alt: "A pumpkin cookie broken in half to show the soft, cakey inside" }
           ],
           sizes: [
-            { id: "pumpkin-cookies-6",  label: "Half dozen", price: 10 },
-            { id: "pumpkin-cookies-12", label: "Dozen",      price: 18 }
+            { id: "pumpkin-cookies-6",  label: "Half dozen", price: 12 },
+            { id: "pumpkin-cookies-12", label: "Dozen",      price: 18 },
+            { id: "pumpkin-cookies-24", label: "2 dozen",    price: 32 }
           ] },
         { id: "pumpkin-bread", name: "Pumpkin Bread", price: 18, description: "Made with our homemade pumpkin pur\u00e9e and warm fall spices, then baked to a beautiful golden-brown finish. This moist, tender loaf has a soft crumb, rich pumpkin flavor, and just the right amount of sweetness. Fall in every slice.",
           images: [
@@ -82,29 +83,33 @@ window.MENU = {
     {
       id: "cookies",
       title: "Cookies",
-      description: "Baked fresh, by the half dozen or dozen.",
+      description: "Baked fresh, by the half dozen, dozen, or 2 dozen.",
       layout: "cards",
       items: [   // add a photo by setting image: "images/your-photo.jpg" (or images: [...] for several)
         { id: "classic-chocolate-chip", name: "Classic Chocolate Chip Cookies", description: "Our classic chocolate chip cookies are rich and buttery, loaded with chocolate chips in every bite. Golden and crisp on the edges with a soft, chewy center, they hit that perfect balance of crunch and softness. A timeless favorite, baked just right.", image: "", alt: "", paymentLink: "",
           sizes: [
             { id: "classic-chocolate-chip-6",  label: "Half dozen", price: 10 },
-            { id: "classic-chocolate-chip-12", label: "Dozen",      price: 15 }
+            { id: "classic-chocolate-chip-12", label: "Dozen",      price: 15 },
+            { id: "classic-chocolate-chip-24", label: "2 dozen",    price: 28 }
           ] },
         { id: "banana-chocolate-chip", name: "Banana Chocolate Chip Cookies", description: "Everything you love about our banana bread, in cookie form. These soft, fluffy cookies are moist and full of real banana flavor, with chocolate chips throughout. Like a warm slice of banana bread you can hold in one hand.", image: "", alt: "", paymentLink: "",
           sizes: [
             { id: "banana-chocolate-chip-6",  label: "Half dozen", price: 12 },
-            { id: "banana-chocolate-chip-12", label: "Dozen",      price: 18 }
+            { id: "banana-chocolate-chip-12", label: "Dozen",      price: 18 },
+            { id: "banana-chocolate-chip-24", label: "2 dozen",    price: 32 }
           ] },
         { id: "mm-cookies", name: "M&M Cookies", description: "Our classic M&M cookies are golden and crisp on the edges with a soft center, packed with colorful M&M's in every bite. Every cookie gets a pop of color and a little chocolatey crunch. A fun, nostalgic treat that's always a crowd-pleaser, especially with kids.", image: "", alt: "", paymentLink: "",
           sizes: [
             { id: "mm-cookies-6",  label: "Half dozen", price: 12 },
-            { id: "mm-cookies-12", label: "Dozen",      price: 18 }
+            { id: "mm-cookies-12", label: "Dozen",      price: 18 },
+            { id: "mm-cookies-24", label: "2 dozen",    price: 32 }
           ] },
         { id: "mexican-wedding", name: "Mexican Wedding Cookies", description: "A buttery, crumbly cookie made with toasted pecans that melts in your mouth with every bite. Each one is rolled in a thick, snowy coat of powdered sugar. Delicate, nutty, and a timeless holiday favorite.", image: "", alt: "", paymentLink: "",
           allergyShort: "Contains nuts", allergy: "Contains tree nuts (pecans). Not suitable for anyone with a nut allergy.",
           sizes: [
             { id: "mexican-wedding-6",  label: "Half dozen", price: 10 },
-            { id: "mexican-wedding-12", label: "Dozen",      price: 15 }
+            { id: "mexican-wedding-12", label: "Dozen",      price: 15 },
+            { id: "mexican-wedding-24", label: "2 dozen",    price: 28 }
           ] }
       ]
     },
