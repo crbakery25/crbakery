@@ -37,7 +37,7 @@ window.MENU = {
             { src: "images/pumpkin-cookies-inside.jpg", alt: "A pumpkin cookie broken in half to show the soft, cakey inside" }
           ],
           sizes: [
-            { id: "pumpkin-cookies-6",  label: "Half dozen", price: 10 },
+            { id: "pumpkin-cookies-6",  label: "Half dozen", price: 12 },
             { id: "pumpkin-cookies-12", label: "Dozen",      price: 18 },
             { id: "pumpkin-cookies-24", label: "2 dozen",    price: 32 }
           ] },
