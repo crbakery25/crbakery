@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Weekend Hot Food | CR Bakery</title>
+  <meta name="description" content="Preorder CR Bakery weekend hot food: tamales for Saturday or Sunday pickup.">
+  <meta name="theme-color" content="#141b40">
+  <link rel="icon" href="images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap">
+  <link rel="stylesheet" href="css/styles.css?v=33">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html" aria-label="CR Bakery home"><img src="images/logo.png" alt="CR Bakery, freshly baked happiness" width="64" height="64"></a>
+      <nav class="nav" aria-label="Main">
+        <a href="menu.html">Menu</a>
+        <a href="about.html">About</a>
+        <a href="hot-food.html" aria-current="page">Hot Food</a>
+        <a class="btn btn-solid btn-sm" href="contact.html">Order</a>
+      </nav>
+    </div>
+  </header>
+  <div class="notice" data-closure-notice hidden><div class="wrap"></div></div>
+
+  <main id="main">
+    <div class="wrap">
+      <div class="page-head">
+        <h1>Weekend Hot Food</h1>
+        <p>Preorder by <strong data-hot-cutoff>Thursday 5:00 PM</strong> for pickup on <span data-hot-pickup>Saturday or Sunday, 10:00 AM to 5:00 PM</span>. Pickup only. Prepayment with Venmo is required to confirm your order.</p>
+        <p class="pickup-spot pickup-spot--page"><strong>Hot food pickup location:</strong> <span data-hot-location>near 65th St &amp; Fruitridge Rd</span>. This is a different spot from cheesecakes, cookies, and breads, which are picked up in <span data-pickup-area>Rosemont</span>.</p>
+      </div>
+
+      <div class="holiday-note" data-hot-holidays hidden></div>
+
+      <div class="cards hot-cards" data-hot-cards></div>
+
+      <div class="order-layout hot-layout">
+        <form class="order-form" id="hot-order">
+          <fieldset>
+            <legend>Your preorder</legend>
+            <div id="hot-items"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Pickup</legend>
+            <div class="field-row">
+              <div class="field">
+                <label for="h-date">Pickup date</label>
+                <select id="h-date" name="date" required aria-describedby="h-date-hint">
+                  <option value="">Choose a date</option>
+                </select>
+                <p class="field-hint" id="h-date-hint"></p>
+              </div>
+              <div class="field">
+                <label for="h-time">Pickup time</label>
+                <select id="h-time" name="time" required>
+                  <option value="">Choose a time</option>
+                </select>
+                <p class="field-hint">Between <span data-hot-pickup-hours>10:00 AM and 5:00 PM</span>. Pickup only, <span data-hot-location>near 65th St &amp; Fruitridge Rd</span>.</p>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Your details</legend>
+            <div class="field-row">
+              <div class="field">
+                <label for="h-first">First name</label>
+                <input id="h-first" name="first_name" type="text" autocomplete="given-name" required>
+              </div>
+              <div class="field">
+                <label for="h-last">Last name</label>
+                <input id="h-last" name="last_name" type="text" autocomplete="family-name" required>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="h-phone">Phone</label>
+                <input id="h-phone" name="phone" type="tel" autocomplete="tel" required>
+              </div>
+              <div class="field">
+                <label for="h-email">Email</label>
+                <input id="h-email" name="email" type="email" autocomplete="email" required>
+              </div>
+            </div>
+            <div class="field">
+              <label for="h-notes">Notes (optional)</label>
+              <textarea id="h-notes" name="notes" rows="3"></textarea>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Payment</legend>
+            <p class="prepay-note"><strong>Prepayment with Venmo is required.</strong> After you send your preorder, pay the total with Venmo. Your order is confirmed once your payment is received.</p>
+          </fieldset>
+
+          <h2 class="breakdown-head">Preorder details</h2>
+          <div class="order-breakdown" id="hot-breakdown" hidden></div>
+          <div class="order-total"><span>Total to prepay</span><span id="hot-total">$0</span></div>
+          <p class="box-count" id="hot-boxes" hidden></p>
+
+          <button class="btn btn-solid" type="submit">Send preorder</button>
+          <p class="form-status" id="hot-status" role="status" aria-live="polite"></p>
+        </form>
+
+        <aside class="pay" aria-labelledby="pay-title">
+          <h2 id="pay-title">How it works</h2>
+          <ol class="hot-steps">
+            <li>Choose your tamales and a weekend pickup time.</li>
+            <li>Send your preorder by <span data-hot-cutoff>Thursday 5:00 PM</span> (holidays have their own deadline).</li>
+            <li>Pay with Venmo. Add your name and pickup date to the payment note.</li>
+            <li>Pick up your order <span data-hot-location>near 65th St &amp; Fruitridge Rd</span> (not in Rosemont). No delivery for hot food.</li>
+          </ol>
+          <a class="btn btn-line" data-venmo-link href="#" target="_blank" rel="noopener">Open Venmo</a>
+          <hr>
+          <h2>Questions?</h2>
+          <p data-email-item>Email <a data-email-link href="#"></a>.</p>
+          <p>Message CR Bakery on <a data-facebook-link href="#" target="_blank" rel="noopener">Facebook</a>.</p>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>
+          <p class="wordmark">CR Bakery</p>
+          <p class="footer-tag">Freshly baked happiness</p>
+        </div>
+        <div>
+          <h2 class="footer-title">Explore</h2>
+          <ul class="footer-links">
+            <li><a href="menu.html">Menu</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="hot-food.html">Weekend Hot Food</a></li>
+            <li><a href="contact.html">Order</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="footer-title">Pay and contact</h2>
+          <ul class="footer-links">
+            <li><a data-venmo-link href="#" target="_blank" rel="noopener">Venmo</a></li>
+            <li><a data-facebook-link href="#" target="_blank" rel="noopener">Facebook</a></li>
+            <li><a data-linktree-link href="#" target="_blank" rel="noopener">Linktree</a></li>
+            <li data-email-item><a data-email-link href="#"></a></li>
+          </ul>
+        </div>
+      </div>
+      <p class="legal">&copy; <span data-year>2026</span> CR Bakery. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    /* Script version: bump this number (in all six pages) whenever a js file changes, so visitors pick up the new file on their next visit. */
+    (function () {
+      var v = 59;
+      ["site-config", "menu-data", "hot-food-data", "site"].forEach(function (n) {
+        document.write('<script src="js/' + n + '.js?v=' + v + '"><\/script>');
+      });
+    })();
+  </script>
+</body>
+</html>

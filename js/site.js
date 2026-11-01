@@ -68,14 +68,53 @@
   }
 
   function orderHref(item) {
-    return "contact.html?add=" + encodeURIComponent(item.id) + "#order";
+    return (item.orderPage || "contact.html") + "?add=" + encodeURIComponent(item.id) + "#order";
+  }
+
+  /* An item sold in several sizes (e.g. half dozen / dozen) lists each size and price under its photo */
+  function sizesHTML(item) {
+    return '<ul class="card-sizes">' + item.sizes.map(function (s) {
+      return '<li><span>' + esc(s.label) + '</span><span class="row-leader" aria-hidden="true"></span><span class="price">' + money(s.price) + "</span></li>";
+    }).join("") + "</ul>";
+  }
+
+  /* An item with more than one photo (images: [...]) gets a photo strip customers can swipe,
+     or step through with the arrows. The name and price below still link to the order form. */
+  function galleryHTML(item) {
+    var imgs = item.images;
+    return '<div class="card-photo gallery" data-gallery>' +
+      '<div class="gallery-track" tabindex="0" aria-label="Photos of ' + esc(item.name) + '">' + imgs.map(function (im, i) {
+        return '<img src="' + esc(im.src) + '" alt="' + esc(im.alt || item.name) + '"' + (i ? ' loading="lazy"' : "") + ">";
+      }).join("") + "</div>" +
+      '<button type="button" class="gallery-btn gallery-prev" data-dir="-1" aria-label="Previous photo">\u2039</button>' +
+      '<button type="button" class="gallery-btn gallery-next" data-dir="1" aria-label="Next photo">\u203A</button>' +
+      '<div class="gallery-dots" aria-hidden="true">' + imgs.map(function (im, i) {
+        return '<span' + (i ? "" : ' class="is-on"') + "></span>";
+      }).join("") + "</div></div>";
+  }
+
+  /* Allergy warning (allergy: "...") shown on the card, in the pop-up and in the order form */
+  function allergyBadge(item) {
+    return item.allergy ? '<p class="allergy-badge"><span aria-hidden="true">\u26A0\uFE0E</span> ' + esc(item.allergyShort || "Allergy warning") + "</p>" : "";
   }
 
   function cardHTML(item) {
-    return '<a class="card" href="' + orderHref(item) + '">' +
+    if (item.images && item.images.length > 1) {
+      return '<div class="card" data-item="' + esc(item.id) + '">' + galleryHTML(item) +
+        '<a class="card-body card-link" href="' + orderHref(item) + '"><h3>' + esc(item.name) + "</h3>" +
+        (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
+        allergyBadge(item) +
+        (item.fillings ? '<p class="card-fillings">' + item.fillings.map(function (f) { return esc(f.name); }).join(" \u00B7 ") + "</p>" : "") +
+        (item.mixAndMatch ? '<p class="card-fillings card-mix">Mix &amp; match fillings in any box</p>' : "") +
+        "</a></div>";
+    }
+    return '<a class="card" data-item="' + esc(item.id) + '" href="' + orderHref(item) + '">' +
       '<div class="card-photo">' + photo(item) + "</div>" +
-      '<div class="card-body"><h3>' + esc(item.name) + '</h3><span class="price">' + money(item.price) + "</span>" +
-      (item.description ? '<p class="card-desc">' + esc(item.description) + "</p>" : "") +
+      '<div class="card-body"><h3>' + esc(item.name) + "</h3>" +
+      (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
+      allergyBadge(item) +
+      (item.fillings ? '<p class="card-fillings">' + item.fillings.map(function (f) { return esc(f.name); }).join(" \u00B7 ") + "</p>" : "") +
+      (item.mixAndMatch ? '<p class="card-fillings card-mix">Mix &amp; match fillings in any box</p>' : "") +
       "</div></a>";
   }
 
@@ -86,7 +125,7 @@
         ? '<img src="' + esc(item.image) + '" alt="" loading="lazy">'
         : '<span class="ph" aria-hidden="true">' + CAKE_ICON + "</span>") + "</span>";
     }
-    return '<a class="row" href="' + orderHref(item) + '">' + thumb +
+    return '<a class="row" data-item="' + esc(item.id) + '" href="' + orderHref(item) + '">' + thumb +
       '<span class="row-name">' + esc(item.name) + "</span>" +
       '<span class="row-leader" aria-hidden="true"></span>' +
       '<span class="price">' + money(item.price) + "</span></a>";
@@ -100,9 +139,24 @@
     return section.items.map(cardHTML).join("");
   }
 
+  function todayISO() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  /* Sections currently on offer: a limited-time section with an
+     availableUntil date in the past is dropped everywhere. */
+  function activeSections() {
+    var today = todayISO();
+    return MENU.sections.filter(function (s) {
+      return !s.availableUntil || s.availableUntil >= today;
+    });
+  }
+
   function findSection(id) {
-    for (var i = 0; i < MENU.sections.length; i++) {
-      if (MENU.sections[i].id === id) return MENU.sections[i];
+    var list = activeSections();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) return list[i];
     }
     return null;
   }
@@ -111,12 +165,93 @@
   function renderMenuPage() {
     var root = $("#menu-root");
     if (!root) return;
-    root.innerHTML = MENU.sections.map(function (s) {
-      return '<section class="menu-section" id="' + esc(s.id) + '">' +
+    root.innerHTML = activeSections().map(function (s) {
+      return '<section class="menu-section' + (s.availableUntil ? " menu-section--special" : "") + '" id="' + esc(s.id) + '">' +
         '<div class="section-head"><h2>' + esc(s.title) + "</h2>" +
-        (s.description ? "<p>" + esc(s.description) + "</p>" : "") + "</div>" +
+        (s.description ? "<p>" + esc(s.description) + "</p>" : "") +
+        (s.note ? '<p class="section-note">' + esc(s.note) + "</p>" : "") + "</div>" +
         '<div class="' + (s.layout === "rows" ? "rows" : "cards") + '">' + itemsHTML(s) + "</div></section>";
     }).join("");
+  }
+
+  /* Photo strips: arrows step one photo; dots follow the photo in view */
+  function initGalleries(root) {
+    $all("[data-gallery]", root).forEach(initGallery);
+  }
+  function initGallery(g) {
+    {
+      var track = $(".gallery-track", g), dots = $all(".gallery-dots span", g);
+      function current() { return Math.round(track.scrollLeft / track.clientWidth); }
+      function show() {
+        var i = current();
+        dots.forEach(function (d, j) { d.classList.toggle("is-on", j === i); });
+        $(".gallery-prev", g).disabled = i === 0;
+        $(".gallery-next", g).disabled = i >= dots.length - 1;
+      }
+      $all(".gallery-btn", g).forEach(function (b) {
+        b.addEventListener("click", function () {
+          track.scrollTo({ left: (current() + Number(b.getAttribute("data-dir"))) * track.clientWidth, behavior: "smooth" });
+        });
+      });
+      track.addEventListener("scroll", function () { window.requestAnimationFrame(show); });
+      show();
+    }
+  }
+
+  /* Item pop-up: clicking a menu item's photo or name shows a larger photo (or photos), the
+     description and an "Add to order" button. Without JavaScript the links still go to the order form. */
+  function findItem(id) {
+    var found = null;
+    activeSections().concat(window.HOT_FOOD ? [window.HOT_FOOD] : []).forEach(function (s) {
+      s.items.forEach(function (it) { if (it.id === id) found = it; });
+    });
+    return found;
+  }
+
+  function popPhotoHTML(item) {
+    if (item.images && item.images.length > 1) return galleryHTML(item).replace(/ loading="lazy"/g, "");
+    var src = item.image || (item.images && item.images[0] && item.images[0].src);
+    var alt = item.alt || (item.images && item.images[0] && item.images[0].alt) || item.name;
+    return '<div class="card-photo">' + (src ? '<img src="' + esc(src) + '" alt="' + esc(alt) + '">' : photo(item)) + "</div>";
+  }
+
+  var pop = null;
+  function openItem(item) {
+    if (!pop) {
+      pop = document.createElement("dialog");
+      pop.className = "item-pop";
+      pop.setAttribute("aria-labelledby", "pop-title");
+      pop.innerHTML = '<button type="button" class="pop-close" aria-label="Close">\u00D7</button><div class="pop-inner"></div>';
+      document.body.appendChild(pop);
+      $(".pop-close", pop).addEventListener("click", function () { pop.close(); });
+      pop.addEventListener("click", function (e) { if (e.target === pop) pop.close(); });   // click outside the box
+      pop.addEventListener("close", function () { document.documentElement.classList.remove("pop-open"); });
+    }
+    $(".pop-inner", pop).innerHTML =
+      '<div class="pop-photo">' + popPhotoHTML(item) + "</div>" +
+      '<div class="pop-text">' +
+      '<h2 id="pop-title">' + esc(item.name) + "</h2>" +
+      (item.sizes ? sizesHTML(item) : '<p class="pop-price price">' + money(item.price) + "</p>") +
+      (item.description ? '<p class="pop-desc">' + esc(item.description) + "</p>" : "") +
+      (item.allergy ? '<p class="allergy-note" role="note"><strong>Allergy warning:</strong> ' + esc(item.allergy) + "</p>" : "") +
+      '<a class="btn btn-solid pop-order" href="' + orderHref(item) + '">' + (item.sizes ? "Choose a size and order" : "Add to order") + "</a>" +
+      "</div>";
+    document.documentElement.classList.add("pop-open");
+    if (pop.showModal) pop.showModal(); else pop.setAttribute("open", "");
+    initGalleries(pop);
+    $(".pop-close", pop).focus();
+  }
+
+  function initItemPopups() {
+    document.addEventListener("click", function (e) {
+      var el = e.target.closest("[data-item]");
+      if (!el || e.target.closest(".gallery-btn") || e.defaultPrevented) return;
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var item = findItem(el.getAttribute("data-item"));
+      if (!item) return;
+      e.preventDefault();
+      openItem(item);
+    });
   }
 
   /* Home page: just the cards for one section */
@@ -190,6 +325,21 @@
     try { sessionStorage.setItem(CONFIRM_KEY, JSON.stringify(record)); return true; } catch (e) { return false; }
   }
 
+  function showPickupNotice(spot) {
+    var d = document.createElement("dialog");
+    d.className = "item-pop pickup-pop";
+    d.setAttribute("aria-labelledby", "pickup-pop-title");
+    d.innerHTML = '<div class="pop-text">' +
+      '<h2 id="pickup-pop-title">Hot food pickup location</h2>' +
+      "<p>Your hot food order will be picked up <strong>" + esc(spot) + "</strong>.</p>" +
+      "<p>This is a different spot from our cheesecakes and other treats" + (SITE.pickupArea ? " (" + esc(SITE.pickupArea) + ")" : "") + ".</p>" +
+      '<button type="button" class="btn btn-solid pop-order">Got it</button></div>';
+    document.body.appendChild(d);
+    $("button", d).addEventListener("click", function () { d.close(); });
+    d.addEventListener("click", function (e) { if (e.target === d) d.close(); });
+    if (d.showModal) d.showModal(); else d.setAttribute("open", "");
+  }
+
   function renderConfirmation() {
     var root = $("#confirm-root");
     if (!root) return;
@@ -205,6 +355,7 @@
       return;
     }
 
+    if (o.prepay && lede) lede.textContent = "Your preorder was sent. Pay with Venmo to confirm it - details below.";
     var first = String(o.name || "").split(" ")[0];
     if (heading && first) heading.textContent = "Thank you, " + first;
     var isDelivery = o.fulfillment === "Delivery";
@@ -224,11 +375,18 @@
       [word + " date", o.date ? shortDate(fromISO(o.date), true) : ""], [word + " time", o.time]
     ];
     if (isDelivery) details.push(["Address", o.address]);
+    if (o.pickupSpot) details.push(["Pickup location", o.pickupSpot]);
+    else if (!isDelivery && SITE.pickupArea) details.push(["Pickup area", SITE.pickupArea]);
     if (o.payment) details.push(["Payment", o.payment]);
     if (o.notes) details.push(["Notes", o.notes]);
 
     var isCash = o.payment === "Cash";
-    var payHtml = isCash
+    var payHtml = o.prepay
+      ? "<p><strong>Prepayment is required.</strong> Your order is confirmed once CR Bakery receives your Venmo payment.</p>" +
+        "<p>Amount to pay: <strong>" + esc(o.total) + "</strong></p>" +
+        "<p>Add your name and pickup date to the payment note.</p>" +
+        '<a class="btn btn-solid" href="' + esc(SITE.venmoUrl || "#") + '" target="_blank" rel="noopener">Pay with Venmo</a>'
+      : isCash
       ? "<p>You chose to pay with cash. Please have it ready at " + word.toLowerCase() + ".</p>" +
         "<p>Estimated total: <strong>" + esc(o.total) + "</strong></p>"
       : "<p>You chose to pay with Venmo. Add your name to the payment note.</p>" +
@@ -244,8 +402,8 @@
         "<p>Order sent " + esc(sent.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })) + "</p></div>" +
       '<div class="confirm-grid">' +
         '<section class="confirm-card" aria-labelledby="c-order"><h2 id="c-order">Order details</h2>' + rows +
-          '<div class="order-total"><span>Estimated total</span><span>' + esc(o.total) + "</span></div>" +
-          '<p class="confirm-note">CR Bakery will confirm your order and final total.</p></section>' +
+          '<div class="order-total"><span>' + (o.prepay ? "Total to prepay" : "Estimated total") + '</span><span>' + esc(o.total) + "</span></div>" +
+          '<p class="confirm-note">' + (o.prepay ? "Your order is confirmed once your Venmo payment is received." : "CR Bakery will confirm your order and final total.") + "</p></section>" +
         '<section class="confirm-card" aria-labelledby="c-contact"><h2 id="c-contact">Your details</h2>' +
           '<dl class="confirm-list">' + list + "</dl></section>" +
         '<section class="confirm-card confirm-pay no-print" aria-labelledby="c-pay"><h2 id="c-pay">How to pay</h2>' +
@@ -255,8 +413,376 @@
         '<button type="button" class="btn btn-line" id="confirm-print">Print order details</button>' +
         '<a class="btn btn-line" href="menu.html">Back to the menu</a></div>';
 
+    /* Hot food is picked up somewhere else than cakes: make sure the customer sees it */
+    if (o.pickupSpot) showPickupNotice(o.pickupSpot);
+
     var printBtn = $("#confirm-print", root);
     if (printBtn) printBtn.addEventListener("click", function () { window.print(); });
+  }
+
+  /* ---------- Weekend hot food: preorder page, pickup only, prepay with Venmo ---------- */
+  var DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+  /* Today's date and time in the bakery's time zone, whatever the visitor's own clock is set to */
+  function bakeryNow() {
+    var p = {};
+    new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+    return { date: p.year + "-" + p.month + "-" + p.day, time: p.hour + ":" + p.minute };
+  }
+  function addDaysISO(iso, n) { var d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+  function weekdayOf(iso) { return new Date(iso + "T12:00:00Z").getUTCDay(); }
+  function clockLabel(hhmm) {
+    var h = Number(hhmm.slice(0, 2)), m = hhmm.slice(3, 5);
+    return ((h + 11) % 12 + 1) + ":" + m + (h < 12 ? " AM" : " PM");
+  }
+  function hotCutoffText(HF) { return HF.orderByDay + " " + clockLabel(HF.orderByTime); }
+
+  /* Pickup dates still open for preorders: every pickup day in the next daysAhead days whose
+     order-by cutoff (the order-by day and time before that weekend) hasn't passed yet */
+  function hotPickupDates(HF) {
+    var now = bakeryNow(), nowKey = now.date + " " + now.time;
+    var days = HF.pickupDays.map(function (d) { return DAY_NAMES.indexOf(d); });
+    var orderDay = DAY_NAMES.indexOf(HF.orderByDay);
+    var ahead = HF.daysAhead || 31, out = [];
+    for (var i = 0; i <= ahead; i++) {
+      var iso = addDaysISO(now.date, i), dow = weekdayOf(iso);
+      if (days.indexOf(dow) === -1) continue;
+      var back = (dow - orderDay + 7) % 7 || 7;
+      var cutoff = addDaysISO(iso, -back);
+      if (nowKey >= cutoff + " " + HF.orderByTime || closedRangeFor(iso)) continue;
+      out.push({ iso: iso, cutoff: cutoff, cutoffTime: HF.orderByTime, start: HF.pickupStart, end: HF.pickupEnd });
+    }
+    /* Holidays: their own pickup hours and order deadline */
+    (HF.holidays || []).forEach(function (h) {
+      var by = h.orderBy || (addDaysISO(h.date, -1) + " " + HF.orderByTime);
+      if (h.date < now.date || h.date > addDaysISO(now.date, ahead) || nowKey >= by || closedRangeFor(h.date)) return;
+      out = out.filter(function (d) { return d.iso !== h.date; });
+      out.push({ iso: h.date, cutoff: by.slice(0, 10), cutoffTime: by.slice(11, 16), start: h.pickupStart || HF.pickupStart,
+        end: h.pickupEnd || HF.pickupEnd, holiday: h.name });
+    });
+    return out.sort(function (a, b) { return a.iso < b.iso ? -1 : 1; });
+  }
+
+  /* Upcoming holiday notes, e.g. "Thanksgiving: pickup Thu, Nov 26, 9:00 AM to 4:00 PM. Order by Wed, Nov 25, 5:00 PM." */
+  function hotHolidayNotes(HF) {
+    var now = bakeryNow(), nowKey = now.date + " " + now.time;
+    return (HF.holidays || []).filter(function (h) {
+      var by = h.orderBy || (addDaysISO(h.date, -1) + " " + HF.orderByTime);
+      return nowKey < by;
+    }).map(function (h) {
+      var by = h.orderBy || (addDaysISO(h.date, -1) + " " + HF.orderByTime);
+      return h.name + ": pickup " + shortDate(fromISO(h.date), true) + ", " + clockLabel(h.pickupStart || HF.pickupStart) + " to " +
+        clockLabel(h.pickupEnd || HF.pickupEnd) + ". Order by " + shortDate(fromISO(by.slice(0, 10)), true) + ", " + clockLabel(by.slice(11, 16)) + ".";
+    });
+  }
+
+  function initHotFood() {
+    var HF = window.HOT_FOOD;
+    if (!HF) return;
+    $all("[data-hot-cutoff]").forEach(function (el) { el.textContent = hotCutoffText(HF); });
+    if (HF.pickupLocation) $all("[data-hot-location]").forEach(function (el) { el.textContent = HF.pickupLocation; });
+    if (SITE.pickupArea) $all("[data-pickup-area]").forEach(function (el) { el.textContent = SITE.pickupArea; });
+    $all("[data-hot-pickup]").forEach(function (el) {
+      el.textContent = HF.pickupDays.join(" or ") + ", " + clockLabel(HF.pickupStart) + " to " + clockLabel(HF.pickupEnd);
+    });
+    $all("[data-hot-pickup-hours]").forEach(function (el) { el.textContent = clockLabel(HF.pickupStart) + " and " + clockLabel(HF.pickupEnd); });
+    $all("[data-hot-cards]").forEach(function (el) { el.innerHTML = HF.items.map(cardHTML).join(""); });
+    $all("[data-hot-holidays]").forEach(function (el) {
+      var notes = hotHolidayNotes(HF);
+      el.hidden = !notes.length;
+      el.innerHTML = notes.map(function (n) { return "<p>" + esc(n) + "</p>"; }).join("");
+    });
+
+    var form = $("#hot-order");
+    if (!form) return;
+    var host = $("#hot-items", form), totalEl = $("#hot-total", form), statusEl = $("#hot-status", form);
+    var breakdownEl = $("#hot-breakdown", form), dateSel = $("#h-date", form), timeSel = $("#h-time", form);
+    var byId = {};
+
+    /* One order line per filling and size */
+    host.innerHTML = HF.items.map(function (it) {
+      var rows = [];
+      (it.fillings || [{ id: "", name: "" }]).forEach(function (f) {
+        (it.sizes || [{ id: "", label: "", price: it.price }]).forEach(function (z) {
+          var name = (f.name ? f.name + " " : "") + it.name + (z.label ? ", " + z.label : "");
+          rows.push({ id: [it.id, f.id, z.id].filter(Boolean).join("-"), name: name, price: z.price, parent: it.id });
+        });
+      });
+      return '<div class="order-group"><h3>' + esc(it.name) + "</h3>" + rows.map(function (r) {
+        byId[r.id] = r;
+        return '<div class="order-row" data-id="' + esc(r.id) + '" data-parent="' + esc(r.parent) + '">' +
+          '<div class="order-name">' + esc(r.name) + '<span class="order-price">' + money(r.price) + "</span></div>" +
+          '<div class="stepper">' +
+          '<button type="button" data-step="-1" aria-label="Remove one ' + esc(r.name) + '">\u2212</button>' +
+          '<input type="number" min="0" max="20" value="0" inputmode="numeric" data-qty aria-label="Quantity of ' + esc(r.name) + '">' +
+          '<button type="button" data-step="1" aria-label="Add one ' + esc(r.name) + '">+</button>' +
+          "</div></div>";
+      }).join("") + (it.mixAndMatch && it.fillings && it.sizes ? mixHTML(it) : "") + "</div>";
+    }).join("");
+
+    /* Mix & match: pick a box size, then how many of each filling; the box is added once it's full */
+    function mixHTML(it) {
+      return '<div class="mix" data-mix="' + esc(it.id) + '">' +
+        '<h4>Mix &amp; match a box</h4>' +
+        '<p class="mix-lede">Choose a box size, then how many of each filling.</p>' +
+        '<div class="choices mix-sizes">' + it.sizes.map(function (z, i) {
+          return '<label class="choice' + (i ? "" : " is-selected") + '"><input type="radio" name="mix-size-' + esc(it.id) + '" value="' + esc(z.id) + '"' +
+            (i ? "" : " checked") + "><span>" + esc(z.label) + " &middot; " + money(z.price) + "</span></label>";
+        }).join("") + "</div>" +
+        it.fillings.map(function (f) {
+          return '<div class="mix-row" data-fill="' + esc(f.id) + '"><span class="mix-name">' + esc(f.name) + "</span>" +
+            '<div class="stepper">' +
+            '<button type="button" data-mstep="-1" aria-label="One less ' + esc(f.name) + '">\u2212</button>' +
+            '<output class="mix-count" aria-live="polite">0</output>' +
+            '<button type="button" data-mstep="1" aria-label="One more ' + esc(f.name) + '">+</button>' +
+            "</div></div>";
+        }).join("") +
+        '<div class="mix-foot"><span class="mix-status" aria-live="polite"></span>' +
+        '<button type="button" class="btn btn-gold btn-sm mix-add" disabled>Add mixed box</button></div>' +
+        '<div class="mix-boxes"></div>' +
+        "</div>";
+    }
+    var mixedBoxes = [];   // { item, qty: 1 } for each finished mixed box
+    $all("[data-mix]", host).forEach(function (box) {
+      var it = HF.items.filter(function (x) { return x.id === box.getAttribute("data-mix"); })[0];
+      var counts = {};
+      function size() {
+        var v = ($('input[type=radio]:checked', box) || {}).value;
+        return it.sizes.filter(function (z) { return z.id === v; })[0] || it.sizes[0];
+      }
+      function need() { return parseInt(size().id, 10) || 0; }
+      function chosen() { return Object.keys(counts).reduce(function (s, k) { return s + counts[k]; }, 0); }
+      function draw() {
+        $all(".mix-sizes .choice", box).forEach(function (c) { c.classList.toggle("is-selected", $("input", c).checked); });
+        $all(".mix-row", box).forEach(function (r) {
+          var n = counts[r.getAttribute("data-fill")] || 0;
+          $(".mix-count", r).textContent = n;
+          r.classList.toggle("is-selected", n > 0);
+          $('[data-mstep="1"]', r).disabled = chosen() >= need();
+          $('[data-mstep="-1"]', r).disabled = n === 0;
+        });
+        var left = need() - chosen();
+        $(".mix-status", box).textContent = left > 0
+          ? chosen() + " of " + need() + " chosen - pick " + left + " more"
+          : "Box full: " + need() + " of " + need();
+        $(".mix-add", box).disabled = left !== 0;
+        $(".mix-boxes", box).innerHTML = mixedBoxes.filter(function (m) { return m.parent === it.id; }).map(function (m, i) {
+          return '<div class="mix-box"><span><strong>' + esc(m.label) + "</strong> " + money(m.item.price) + '<br><span class="mix-detail">' + esc(m.detail) + "</span></span>" +
+            '<button type="button" class="mix-remove" data-remove="' + mixedBoxes.indexOf(m) + '">Remove</button></div>';
+        }).join("");
+      }
+      box.addEventListener("change", function (e) {
+        if (e.target.type !== "radio") return;
+        /* Shrinking the box trims the last fillings picked so the count still fits */
+        var over = chosen() - need();
+        it.fillings.slice().reverse().forEach(function (f) {
+          while (over > 0 && counts[f.id] > 0) { counts[f.id]--; over--; }
+        });
+        draw();
+      });
+      box.addEventListener("click", function (e) {
+        var s = e.target.closest("[data-mstep]");
+        if (s) {
+          var id = s.closest(".mix-row").getAttribute("data-fill");
+          var step = parseInt(s.getAttribute("data-mstep"), 10);
+          if (step > 0 && chosen() >= need()) return;
+          counts[id] = Math.max(0, (counts[id] || 0) + step);
+          draw(); return;
+        }
+        if (e.target.closest(".mix-add")) {
+          if (chosen() !== need()) return;
+          var z = size();
+          var detail = it.fillings.filter(function (f) { return counts[f.id]; })
+            .map(function (f) { return counts[f.id] + " " + f.name; }).join(", ");
+          var label = "Mixed " + it.name + ", " + z.label;
+          mixedBoxes.push({ parent: it.id, label: label, detail: detail, item: { name: label + " (" + detail + ")", price: z.price }, qty: 1 });
+          counts = {};
+          draw(); refresh(); return;
+        }
+        var r = e.target.closest("[data-remove]");
+        if (r) { mixedBoxes.splice(Number(r.getAttribute("data-remove")), 1); draw(); refresh(); }
+      });
+      draw();
+    });
+
+    function qty(row) { var n = parseInt($("[data-qty]", row).value, 10); return isNaN(n) || n < 0 ? 0 : Math.min(n, 20); }
+    function lines() {
+      return $all(".order-row", host).map(function (row) { return { item: byId[row.getAttribute("data-id")], qty: qty(row) }; })
+        .filter(function (l) { return l.qty > 0; })
+        .concat(mixedBoxes.map(function (m) { return { item: m.item, qty: 1 }; }));
+    }
+    function total() { return lines().reduce(function (s, l) { return s + l.qty * l.item.price; }, 0); }
+    function refresh() {
+      $all(".order-row", host).forEach(function (row) { row.classList.toggle("is-selected", qty(row) > 0); });
+      var ls = lines();
+      breakdownEl.hidden = !ls.length;
+      breakdownEl.innerHTML = ls.map(function (l) {
+        return '<div class="breakdown-row"><span>' + l.qty + "&nbsp;&times;&nbsp;" + esc(l.item.name) + "</span><span>" + money(l.qty * l.item.price) + "</span></div>";
+      }).join("");
+      totalEl.textContent = money(total());
+      var boxEl = $("#hot-boxes", form);
+      if (boxEl) {
+        var n = boxCount(), l = left[dateSel.value];
+        boxEl.hidden = !n;
+        boxEl.className = "box-count" + (typeof l === "number" && n > l ? " is-over" : "");
+        boxEl.textContent = "This preorder uses " + n + " box" + (n === 1 ? "" : "es") + " (each half dozen or dozen is one box)." +
+          (typeof l === "number" && dateSel.value ? " " + l + " of " + LIMIT + " left for that day." : "") +
+          (typeof l === "number" && n > l ? " Please remove some or choose another date." : "");
+      }
+    }
+    function boxCount() { return lines().reduce(function (s, l) { return s + l.qty; }, 0); }
+    host.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-step]");
+      if (!b || !b.closest(".order-row")) return;
+      var row = b.closest(".order-row");
+      $("[data-qty]", row).value = Math.max(0, Math.min(20, qty(row) + parseInt(b.getAttribute("data-step"), 10)));
+      refresh();
+    });
+    host.addEventListener("input", refresh);
+
+    /* Pickup dates (open weekends only) and times (several orders can share a time) */
+    var dates = hotPickupDates(HF);
+    var LIMIT = HF.boxLimit || 30;
+    var left = {};   // boxes still available per date, from the booking service (empty if it can't be reached)
+    function dateLabel(d) {
+      var n = left[d.iso];
+      return shortDate(fromISO(d.iso), true) + (d.holiday ? " - " + d.holiday : "") +
+        (n === 0 ? " (sold out)" : typeof n === "number" && n <= 10 ? " (" + n + " box" + (n === 1 ? "" : "es") + " left)" : "");
+    }
+    function drawDates() {
+      var keep = dateSel.value;
+      dateSel.innerHTML = '<option value="">Choose a date</option>' + dates.map(function (d) {
+        return '<option value="' + d.iso + '"' + (left[d.iso] === 0 ? " disabled" : "") + (d.iso === keep && left[d.iso] !== 0 ? " selected" : "") + ">" +
+          esc(dateLabel(d)) + "</option>";
+      }).join("");
+    }
+    function loadLeft() {
+      if (!SITE.bookingApi || !dates.length) return Promise.resolve();
+      return fetch(SITE.bookingApi + "/hot-capacity?dates=" + dates.map(function (d) { return d.iso; }).join(","), { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error("no capacity"); return r.json(); })
+        .then(function (d) { left = d.left || {}; drawDates(); refresh(); })
+        .catch(function () {});
+    }
+    drawDates();
+    loadLeft();
+    var dateHint = $("#h-date-hint", form);
+    if (dateHint) {
+      dateHint.textContent = dates.length
+        ? "Order by " + hotCutoffText(HF) + " for that weekend. Next pickups: " + shortDate(fromISO(dates[0].iso), true) +
+          (dates[1] && dates[1].cutoff === dates[0].cutoff ? " and " + shortDate(fromISO(dates[1].iso), true) : "") +
+          " (order by " + shortDate(fromISO(dates[0].cutoff), true) + ", " + clockLabel(dates[0].cutoffTime || HF.orderByTime) + ")." +
+          " Up to " + (HF.boxLimit || 30) + " boxes per pickup day."
+        : "Preorders aren't open right now. Please check back soon.";
+    }
+    /* Pickup times follow the chosen date (holidays can have their own hours) */
+    var toMin = function (s) { return Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5)); };
+    var hoursHint = $("[data-hot-pickup-hours]", form);
+    function drawTimes() {
+      var d = dates.filter(function (x) { return x.iso === dateSel.value; })[0];
+      var start = d ? d.start : HF.pickupStart, end = d ? d.end : HF.pickupEnd, keep = timeSel.value;
+      var opts = '<option value="">Choose a time</option>';
+      for (var m = toMin(start); m <= toMin(end); m += 30) {
+        var key = String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+        opts += '<option value="' + clockLabel(key) + '"' + (clockLabel(key) === keep ? " selected" : "") + ">" + clockLabel(key) + "</option>";
+      }
+      timeSel.innerHTML = opts;
+      if (hoursHint) hoursHint.textContent = clockLabel(start) + " and " + clockLabel(end);
+      refresh();
+    }
+    dateSel.addEventListener("change", drawTimes);
+    drawTimes();
+
+    var add = new URLSearchParams(window.location.search).get("add");
+    if (add) {
+      var first = $('.order-row[data-parent="' + add + '"]', host);
+      $all('.order-row[data-parent="' + add + '"]', host).forEach(function (r) { r.classList.add("is-highlight"); });
+      if (first) setTimeout(function () { first.scrollIntoView({ block: "center" }); }, 50);
+    }
+
+    function say(msg, kind) { statusEl.textContent = msg; statusEl.className = "form-status" + (kind ? " is-" + kind : ""); }
+    function postPlain(url, fields) {
+      var f = document.createElement("form");
+      f.method = "POST"; f.action = url; f.style.display = "none";
+      Object.keys(fields).forEach(function (k) {
+        var i = document.createElement("input"); i.type = "hidden"; i.name = k; i.value = fields[k]; f.appendChild(i);
+      });
+      document.body.appendChild(f); f.submit();
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var ls = lines();
+      if (!ls.length) { say("Add at least one item to send your preorder.", "error"); host.scrollIntoView({ block: "center" }); return; }
+      /* The weekend may have closed while the page was open */
+      var still = hotPickupDates(HF).some(function (d) { return d.iso === dateSel.value; });
+      if (!still) { say("Orders for that date just closed. Please choose another date.", "error"); return; }
+      var boxes = boxCount(), have = left[dateSel.value];
+      if (typeof have === "number" && boxes > have) {
+        say(have ? "Only " + have + " box" + (have === 1 ? "" : "es") + " left for that day. Please remove some or choose another date." : "That day is sold out. Please choose another date.", "error");
+        return;
+      }
+      var chosenDay = dates.filter(function (d) { return d.iso === dateSel.value; })[0] || {};
+      var fd = new FormData(form);
+      var name = (fd.get("first_name") + " " + fd.get("last_name")).trim();
+      var text = ls.map(function (l) { return l.qty + " x " + l.item.name + " (" + money(l.item.price) + " each)"; }).join("\n");
+      var record = {
+        name: name, phone: fd.get("phone"), email: fd.get("email") || "", fulfillment: "Pickup", prepay: true,
+        date: fd.get("date"), time: fd.get("time"), payment: "Venmo (prepayment required)", notes: fd.get("notes") || "",
+        items: ls.map(function (l) { return { name: l.item.name, qty: l.qty, price: l.item.price }; }),
+        fee: 0, total: money(total()), sentAt: Date.now(), pickupSpot: HF.pickupLocation || ""
+      };
+      var payload = {
+        _subject: "New CR Bakery weekend hot food preorder from " + name,
+        order_type: "Weekend hot food preorder - pickup only, confirm once Venmo payment is received",
+        name: name, email: record.email, phone: record.phone, pickup_date: record.date, pickup_time: record.time,
+        pickup_location: "Hot food pickup " + (HF.pickupLocation || ""),
+        order: text, boxes: boxes, total: record.total, payment: record.payment, notes: record.notes
+      };
+      if (chosenDay.holiday) payload.holiday = chosenDay.holiday;
+      if (TEST_MODE || !SITE.formEndpoint) {
+        if (TEST_MODE && saveConfirmation(record)) { window.location.href = "order-confirmed.html?sent=" + record.sentAt; return; }
+        say(TEST_MODE ? "Test version: your preorder was not sent." : "Online preorders aren't open yet.", TEST_MODE ? "ok" : "error");
+        return;
+      }
+      function finishBoxes(hold) {
+        if (!hold || !SITE.bookingApi) return;
+        fetch(SITE.bookingApi + "/hot-finalize", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: hold.token }), keepalive: true }).catch(function () {});
+      }
+      function send(hold) {
+        say("Sending your preorder...", "");
+        fetch(SITE.formEndpoint, {
+          method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(payload)
+        }).then(function (res) {
+          if (!res.ok) throw new Error("bad response");
+          finishBoxes(hold);
+          if (saveConfirmation(record)) { window.location.href = "order-confirmed.html?sent=" + record.sentAt; return; }
+          say("Thanks, " + name + ". Your preorder was sent. Pay with Venmo to confirm it.", "ok");
+        }).catch(function () { finishBoxes(hold); postPlain(SITE.formEndpoint, payload); });
+      }
+      if (!SITE.bookingApi) { send(null); return; }
+      /* Hold the boxes first so the day can't go over its limit */
+      say("Checking availability...", "");
+      fetch(SITE.bookingApi + "/hot-reserve", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: record.date, boxes: boxes, name: name })
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (body) { return { status: res.status, body: body }; });
+      }).then(function (r) {
+        if (r.status === 200 && r.body.token) { send(r.body); return; }
+        if (r.status === 409) {
+          var l = typeof r.body.left === "number" ? r.body.left : 0;
+          left[record.date] = l; drawDates(); refresh();
+          say(l ? "Sorry, only " + l + " box" + (l === 1 ? " is" : "es are") + " left for that day. Please remove some or choose another date." : "Sorry, that day just sold out. Please choose another date.", "error");
+          return;
+        }
+        if (r.status === 429) { say("Too many attempts. Please try again in a little while.", "error"); return; }
+        if (r.status === 404) { send(null); return; }   // booking service not updated yet: send without the box limit
+        say("We couldn't check availability. Please try again.", "error");
+      }).catch(function () { say("We couldn't check availability. Please check your connection and try again.", "error"); });
+    });
+    refresh();
   }
 
   /* Order form */
@@ -275,11 +801,21 @@
     var byId = {};
     var dv = delivery();
 
-    host.innerHTML = MENU.sections.map(function (s) {
-      return '<div class="order-group"><h3>' + esc(s.title) + "</h3>" + s.items.map(function (it) {
+    host.innerHTML = activeSections().map(function (s) {
+      /* An item with sizes becomes one order line per size, e.g. "Pumpkin Cookies, Half dozen" */
+      var rows = [];
+      s.items.forEach(function (it) {
+        if (it.sizes) {
+          it.sizes.forEach(function (z) { rows.push({ id: z.id, name: it.name + ", " + z.label, price: z.price, parent: it.id, allergy: it.allergy, allergyShort: it.allergyShort }); });
+        } else {
+          rows.push(it);
+        }
+      });
+      return '<div class="order-group"><h3>' + esc(s.title) + "</h3>" + rows.map(function (it) {
         byId[it.id] = it;
-        return '<div class="order-row" data-id="' + esc(it.id) + '">' +
-          '<div class="order-name">' + esc(it.name) + '<span class="order-price">' + money(it.price) + "</span></div>" +
+        return '<div class="order-row" data-id="' + esc(it.id) + '"' + (it.parent ? ' data-parent="' + esc(it.parent) + '"' : "") + ">" +
+          '<div class="order-name">' + esc(it.name) + '<span class="order-price">' + money(it.price) + "</span>" +
+          (it.allergy ? '<span class="order-allergy">\u26A0\uFE0E ' + esc(it.allergyShort || "Allergy warning") + "</span>" : "") + "</div>" +
           '<div class="stepper">' +
           '<button type="button" data-step="-1" aria-label="Remove one ' + esc(it.name) + '">\u2212</button>' +
           '<input type="number" min="0" max="20" value="0" inputmode="numeric" data-qty aria-label="Quantity of ' + esc(it.name) + '">' +
@@ -596,7 +1132,7 @@
       e.preventDefault();
       var ls = lines();
       if (!ls.length) {
-        say("Add at least one cake to send your order.", "error");
+        say("Add at least one item to send your order.", "error");
         host.scrollIntoView({ block: "center" });
         return;
       }
@@ -704,6 +1240,12 @@
       addItem: function (id) {
         var row = $('.order-row[data-id="' + id + '"]', host);
         if (row && rowQty(row) < 1) setQty(id, 1);
+        /* For an item with sizes, show its size lines so the customer picks one */
+        var first = !row && $('.order-row[data-parent="' + id + '"]', host);
+        if (first) {
+          $all('.order-row[data-parent="' + id + '"]', host).forEach(function (r) { r.classList.add("is-highlight"); });
+          setTimeout(function () { first.scrollIntoView({ block: "center" }); }, 50);
+        }
       }
     };
 
@@ -716,6 +1258,9 @@
     showTestBanner();
     renderMenuPage();
     renderCardBlocks();
+    initGalleries(document);
+    initItemPopups();
+    initHotFood();
     fillContactLinks();
     showClosureNotice();
     initOrderForm();

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap">
-  <link rel="stylesheet" href="css/styles.css?v=23">
+  <link rel="stylesheet" href="css/styles.css?v=33">
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -20,6 +20,7 @@
       <nav class="nav" aria-label="Main">
         <a href="menu.html">Menu</a>
         <a href="about.html">About</a>
+        <a href="hot-food.html">Hot Food</a>
         <a class="btn btn-solid btn-sm" href="contact.html" aria-current="page">Order</a>
       </nav>
     </div>
@@ -36,7 +37,7 @@
       <div class="order-layout">
         <form class="order-form" id="order">
           <fieldset>
-            <legend>Your cakes</legend>
+            <legend>Your order</legend>
             <div id="order-items"></div>
           </fieldset>
 
@@ -154,6 +155,7 @@
           <ul class="footer-links">
             <li><a href="menu.html">Menu</a></li>
             <li><a href="about.html">About</a></li>
+            <li><a href="hot-food.html">Weekend Hot Food</a></li>
             <li><a href="contact.html">Order</a></li>
           </ul>
         </div>
@@ -172,10 +174,10 @@
   </footer>
 
   <script>
-    /* Script version: bump this number (in all five pages) whenever a js file changes, so visitors pick up the new file on their next visit. */
+    /* Script version: bump this number (in all six pages) whenever a js file changes, so visitors pick up the new file on their next visit. */
     (function () {
-      var v = 17;
-      ["site-config", "menu-data", "site"].forEach(function (n) {
+      var v = 59;
+      ["site-config", "menu-data", "hot-food-data", "site"].forEach(function (n) {
         document.write('<script src="js/' + n + '.js?v=' + v + '"><\/script>');
       });
     })();
