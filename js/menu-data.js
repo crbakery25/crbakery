@@ -23,7 +23,7 @@ window.MENU = {
   sections: [
     {
       id: "seasonal",
-      title: "Seasonal specials",
+      title: "Seasonal Menu",
       description: "Here for a limited time only.",
       availableUntil: "2026-11-30",
       note: "Available through November 30.",
