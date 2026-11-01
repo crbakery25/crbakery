@@ -260,6 +260,13 @@
       var s = findSection(el.getAttribute("data-menu-cards"));
       if (s) el.innerHTML = itemsHTML(s);
     });
+    /* A home page section for a limited-time menu section disappears once that section ends */
+    $all("[data-hide-if-empty]").forEach(function (el) {
+      var s = findSection(el.getAttribute("data-hide-if-empty"));
+      el.hidden = !s;
+      var note = s && $("[data-section-note]", el);
+      if (note && s.note) note.textContent = (s.description ? s.description + " " : "") + s.note;
+    });
     $all("[data-min-price]").forEach(function (el) {
       var s = findSection(el.getAttribute("data-min-price"));
       if (s && s.items.length) {

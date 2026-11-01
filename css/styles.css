@@ -294,7 +294,7 @@ html.pop-open { overflow: hidden; }
   background: var(--mist); border-left: 3px solid var(--gold);
   font-size: .9rem; color: var(--gold-ink); font-style: italic;
 }
-.menu-section--special h2::after {
+.menu-section--special h2::after, .section--seasonal h2::after {
   content: "Limited time"; display: inline-block; vertical-align: middle;
   margin-left: .75rem; padding: .2rem .6rem; border-radius: 999px;
   background: var(--navy); color: #fff; font: 600 .65rem/1.4 var(--sans);
@@ -507,3 +507,4 @@ html.pop-open { overflow: hidden; }
 .pickup-pop .pop-text { padding: 2rem 1.75rem 1.75rem; }
 .pickup-pop .pop-text h2 { padding-right: 0; }
 .pickup-pop p { margin: 0; }
+.section--seasonal { background: #faf6ee; border-bottom: 1px solid #efe5cf; }
