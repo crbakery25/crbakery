@@ -104,6 +104,8 @@
         '<a class="card-body card-link" href="' + orderHref(item) + '"><h3>' + esc(item.name) + "</h3>" +
         (item.sizes ? sizesHTML(item) : '<span class="price">' + money(item.price) + "</span>") +
         allergyBadge(item) +
+        (item.fillings ? '<p class="card-fillings">' + item.fillings.map(function (f) { return esc(f.name); }).join(" \u00B7 ") + "</p>" : "") +
+        (item.mixAndMatch ? '<p class="card-fillings card-mix">Mix &amp; match fillings in any box</p>' : "") +
         "</a></div>";
     }
     return '<a class="card" data-item="' + esc(item.id) + '" href="' + orderHref(item) + '">' +
